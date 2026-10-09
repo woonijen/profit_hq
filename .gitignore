@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment (never commit real secrets; commit .env.example only)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test & coverage
+coverage/
+
+# OS / editor
+.DS_Store
+.idea/
