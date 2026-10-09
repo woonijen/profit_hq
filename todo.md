@@ -19,16 +19,16 @@ Tasks that only you can do live in [user_todo.md](user_todo.md).
 
 ## Phase 1 — Authentication (JWT access + refresh rotation)
 
-- [ ] 12. User model (email unique, passwordHash, timestamps) + password hashing util
-- [ ] 13. Token utils: sign/verify access JWT; generate opaque refresh token; hash for storage
-- [ ] 14. RefreshToken model (userId, tokenHash, family, expiresAt, revokedAt, replacedBy, userAgent/ip) + TTL index
-- [ ] 15. POST /api/auth/register and /login (sets refresh httpOnly+Secure+SameSite cookie, returns access token)
-- [ ] 16. POST /api/auth/refresh — rotation + reuse detection (revoke whole family on reuse)
-- [ ] 17. POST /api/auth/logout (revoke current family, clear cookie) and GET /api/auth/me
-- [ ] 18. requireAuth middleware (Bearer access token) + auth-specific rate limits
-- [ ] 19. Frontend auth: AuthProvider, in-memory access token, silent refresh on load
-- [ ] 20. API client 401 interceptor: single-flight refresh + retry, force logout on failure
-- [ ] 21. Login / Register pages (form validation, error display) + ProtectedRoute / PublicOnlyRoute
+- [x] 12. User model (email unique, passwordHash, timestamps) + password hashing util
+- [x] 13. Token utils: sign/verify access JWT; generate opaque refresh token; hash for storage
+- [x] 14. RefreshToken model (userId, tokenHash, family, expiresAt, revokedAt, replacedBy, userAgent/ip) + TTL index
+- [x] 15. POST /api/auth/register and /login (sets refresh httpOnly+Secure+SameSite cookie, returns access token)
+- [x] 16. POST /api/auth/refresh — rotation + reuse detection (revoke whole family on reuse)
+- [x] 17. POST /api/auth/logout (revoke current family, clear cookie) and GET /api/auth/me
+- [x] 18. requireAuth middleware (Bearer access token) + auth-specific rate limits
+- [x] 19. Frontend auth: AuthProvider, in-memory access token, silent refresh on load
+- [x] 20. API client 401 interceptor: single-flight refresh + retry, force logout on failure
+- [x] 21. Login / Register pages (form validation, error display) + ProtectedRoute / PublicOnlyRoute
 
 ## Phase 2 — Domain model & simulated Shopify data
 

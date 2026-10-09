@@ -1,8 +1,11 @@
 import { NavLink, Outlet } from 'react-router';
+import { useAuth } from '@/features/auth/auth-context';
 
 const navItems = [{ to: '/', label: 'Dashboard' }];
 
 export function AppLayout() {
+  const { state, logout } = useAuth();
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="border-b border-slate-200 bg-white md:w-60 md:border-r md:border-b-0">
@@ -30,8 +33,20 @@ export function AppLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-end border-b border-slate-200 bg-white px-6">
-          {/* Sync status + user menu land here in later phases. */}
+        <header className="flex h-14 items-center justify-end gap-4 border-b border-slate-200 bg-white px-6">
+          {/* Sync status lands here in a later phase. */}
+          {state.status === 'authenticated' && (
+            <>
+              <span className="truncate text-sm text-slate-600">{state.user.email}</span>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Log out
+              </button>
+            </>
+          )}
         </header>
         <main className="flex-1 p-6">
           <Outlet />

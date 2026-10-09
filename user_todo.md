@@ -13,3 +13,12 @@ Legend: `[ ]` todo · `[x]` done. These are tasks only you can do. Claude's task
 - [ ] 9. Create the GitHub repo and push; add CI secrets if needed (e.g. `MONGODB_URI_TEST`)
 - [ ] 10. Take screenshots/GIF of the dashboard for the README once Phase 6 is done
 - [ ] 11. (Later) Create hosting accounts for deployment (backend + frontend) and add production env vars
+- [x] 12. Manually test Phase 1 auth (after `npm install`, `npm run dev`):
+  - Register at `/register` (password ≥ 10 chars) → you land on the dashboard and see your email + Log out in the header
+  - Reload the page → you stay logged in (silent refresh); in DevTools → Application → Cookies, `refresh_token` is httpOnly with path `/api/auth`
+  - Log out → back to `/login`; visiting `/` redirects to `/login`
+  - Wrong password and unknown email both show "Invalid email or password"
+  - Registering the same email twice shows "An account with this email already exists"
+  - Reuse detection: log in, copy the `refresh_token` cookie value, reload once (rotates it), then paste the old value back and reload → you are logged out, and the newest cookie no longer works either
+  - `GET /api/auth/me` without a token returns 401 with the standard error envelope
+  - More than 10 failed logins in 15 minutes returns 429 `TOO_MANY_REQUESTS`
