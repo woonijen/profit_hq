@@ -21,6 +21,7 @@ Full-stack analytics dashboard for Shopify merchants: true net profit (revenue m
 
 - `npm run dev` — backend (4000) + frontend (5173), Vite proxies `/api` to the backend
 - `npm run typecheck` · `npm run lint` · `npm run build` · `npm run format:check`
+- `npm test` (Vitest, backend). Tests that need MongoDB use `MONGODB_URI_TEST` (a dedicated database, never the dev one) and skip without it. Claude does not run those; the user does.
 - Single workspace: `npm run dev -w backend`
 
 ## Conventions
@@ -38,4 +39,5 @@ Full-stack analytics dashboard for Shopify merchants: true net profit (revenue m
 
 - COGS is snapshotted onto each order line at sync time, so later cost changes don't rewrite past profit.
 - Sync idempotency comes from unique `(storeId, shopifyId)` indexes, bulkWrite upserts and a `contentHash` to skip unchanged docs.
+- Sync engine design and the idempotency invariant: `docs/sync.md`.
 - Metric definitions go in `docs/metrics.md` (task 36): Net Revenue = gross − discounts − refunds; Net Profit = Net Revenue − COGS; AOV = Net Revenue ÷ orders; taxes tracked separately and excluded from revenue.

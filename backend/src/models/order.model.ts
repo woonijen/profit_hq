@@ -22,6 +22,9 @@ const lineItemSchema = new Schema(
     title: { type: String, required: true },
     sku: { type: String, default: null },
     quantity: { type: Number, required: true, min: 1, validate: Number.isInteger },
+    // Units refunded across all refunds of the order (derived from `refunds`, kept here so
+    // profit queries need not dig through them). COGS only counts the units that stayed sold.
+    refundedQuantity: { type: Number, default: 0, min: 0, validate: Number.isInteger },
     unitPriceCents: cents(),
     // Total discount allocated to this line (all units), not per unit.
     discountCents: cents(),

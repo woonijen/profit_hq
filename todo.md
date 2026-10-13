@@ -42,22 +42,22 @@ Tasks that only you can do live in [user_todo.md](user_todo.md).
 
 ## Phase 3 — Idempotent Sync Engine
 
-- [ ] 29. Mappers: Shopify payload → internal documents (normalize money, dates, COGS lookup from product cost)
-- [ ] 30. bulkWrite layer: batched, unordered upserts keyed on (storeId, shopifyId); $set mutable fields, $setOnInsert immutable; skip unchanged via contentHash
-- [ ] 31. Sync service: fetch pages → map → bulkWrite in chunks → aggregate BulkWriteResult into SyncRun; products synced before orders
-- [ ] 32. Concurrency guard: prevent two simultaneous syncs per store (lock via SyncRun status / unique partial index)
-- [ ] 33. POST /api/stores/:id/sync (auth + ownership check) and GET /api/stores/:id/sync/status|latest
-- [ ] 34. Idempotency proof: documented invariant + automated test — run sync 3×, revenue/order counts identical
-- [ ] 35. Partial-failure handling: per-batch error capture, resumable, clear SyncRun error info
+- [x] 29. Mappers: Shopify payload → internal documents (normalize money, dates, COGS lookup from product cost)
+- [x] 30. bulkWrite layer: batched, unordered upserts keyed on (storeId, shopifyId); $set mutable fields, $setOnInsert immutable; skip unchanged via contentHash
+- [x] 31. Sync service: fetch pages → map → bulkWrite in chunks → aggregate BulkWriteResult into SyncRun; products synced before orders
+- [x] 32. Concurrency guard: prevent two simultaneous syncs per store (lock via SyncRun status / unique partial index)
+- [x] 33. POST /api/stores/:id/sync (auth + ownership check) and GET /api/stores/:id/sync/status|latest
+- [x] 34. Idempotency proof: documented invariant + automated test — run sync 3×, revenue/order counts identical
+- [x] 35. Partial-failure handling: per-batch error capture, resumable, clear SyncRun error info
 
 ## Phase 4 — Net Profit Dashboard (backend)
 
-- [ ] 36. docs/metrics.md: exact definitions of Gross Revenue, Net Revenue, COGS, Taxes, Net Profit, AOV, Net Margin
-- [ ] 37. Date-range parsing util (7d/30d/90d → UTC bounds in store timezone) + Zod schema
-- [ ] 38. Aggregation pipeline: summary metrics ($match → $unwind lines → $group) with $facet/single-pass design
-- [ ] 39. GET /api/stores/:id/metrics/summary?range=… returning cards + previous-period comparison
-- [ ] 40. Index review with explain() notes; add covering indexes if needed
-- [ ] 41. Unit/integration tests for pipelines using a seeded fixture with hand-computed expected values
+- [x] 36. docs/metrics.md: exact definitions of Gross Revenue, Net Revenue, COGS, Taxes, Net Profit, AOV, Net Margin
+- [x] 37. Date-range parsing util (7d/30d/90d → UTC bounds in store timezone) + Zod schema
+- [x] 38. Aggregation pipeline: summary metrics ($match → $unwind lines → $group) with $facet/single-pass design
+- [x] 39. GET /api/stores/:id/metrics/summary?range=… returning cards + previous-period comparison
+- [x] 40. Index review with explain() notes; add covering indexes if needed
+- [x] 41. Unit/integration tests for pipelines using a seeded fixture with hand-computed expected values
 
 ## Phase 5 — Trend data (backend)
 

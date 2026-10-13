@@ -4,6 +4,7 @@ import { env } from '../config/env.js';
 import { AppError } from '../errors/app-error.js';
 import { RefreshToken } from '../models/refresh-token.model.js';
 import { User } from '../models/user.model.js';
+import { isDuplicateKeyError } from '../utils/mongo-errors.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../utils/tokens.js';
 import { ensureDefaultStore } from './store.service.js';
@@ -33,10 +34,6 @@ const dummyHash = hashPassword('not-a-real-password');
 
 function toPublicUser(user: { id: string; email: string; createdAt: Date }): PublicUser {
   return { id: user.id, email: user.email, createdAt: user.createdAt };
-}
-
-function isDuplicateKey(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && 'code' in err && err.code === 11000;
 }
 
 /** Stores a new refresh token in `family` and returns the raw value to hand to the client. */
@@ -83,7 +80,8 @@ export async function register(
   try {
     user = await User.create({ email: input.email, passwordHash });
   } catch (err) {
-    if (isDuplicateKey(err)) throw AppError.conflict('An account with this email already exists');
+    if (isDuplicateKeyError(err))
+      throw AppError.conflict('An account with this email already exists');
     throw err;
   }
   await ensureDefaultStore(user._id);

@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { isProduction } from '../config/env.js';
 import { AppError } from '../errors/app-error.js';
+import { isDuplicateKeyError } from '../utils/mongo-errors.js';
 
 /** Shape of every error response: `{ error: { code, message, details?, requestId } }`. */
 export interface ErrorResponse {
@@ -32,10 +33,6 @@ function isExposedHttpError(err: unknown): err is HttpLikeError & { status: numb
   );
 }
 
-function isMongoDuplicateKey(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && 'code' in err && err.code === 11000;
-}
-
 export const errorHandler: ErrorRequestHandler = (err: unknown, req, res, _next) => {
   // httpLogger always sets a string id and echoes it in this header.
   const requestId = res.getHeader('x-request-id')?.toString() ?? '';
@@ -51,7 +48,7 @@ export const errorHandler: ErrorRequestHandler = (err: unknown, req, res, _next)
     status = err.status;
     code = err.type === 'entity.too.large' ? 'PAYLOAD_TOO_LARGE' : 'BAD_REQUEST';
     message = err.type === 'entity.parse.failed' ? 'Malformed JSON body' : err.message;
-  } else if (isMongoDuplicateKey(err)) {
+  } else if (isDuplicateKeyError(err)) {
     status = 409;
     code = 'CONFLICT';
     message = 'Resource already exists';

@@ -26,3 +26,15 @@ Legend: `[ ]` todo · `[x]` done. These are tasks only you can do. Claude's task
   - Register a new user → in Atlas, the `stores` collection has one document for them (`shopDomain` like `demo-xxxxxxxx.myshopify.com`, currency `USD`, timezone `UTC`)
   - Existing users registered before Phase 2 have no store yet; that is expected (the sync in Phase 3 will create it)
   - Registering with a duplicate email still returns 409 and creates no store
+- [x] 14. Test Phase 3 (after `npm install`):
+  - Put the dedicated test database URI in `backend/.env` as `MONGODB_URI_TEST` (see `.env.example`; it must not be your dev database), then run `npm test -w backend`. All 6 database tests in `sync.service.test.ts` should pass (this is what todo #34 waits on; tell Claude if any fail)
+  - `npm run dev`, log in, then call the API with your access token (DevTools → Network, or curl): `GET /api/stores` returns your store (it is created now if you registered before Phase 2)
+  - `POST /api/stores/<id>/sync` returns `202` with a `running` run; `GET /api/stores/<id>/sync/latest` shortly after shows `succeeded` with products ~24 and orders ~1000 inserted
+  - Run the POST twice more: counts show `inserted: 0, updated: 0` and `unchanged` equal to the totals. In Atlas, `orders` has the same document count and `updatedAt` values do not change
+  - Fire two POSTs at once (or right after each other): the second returns `409 CONFLICT`
+  - Another user's store id returns `404`; no token returns `401`
+- [x] 15. Test Phase 4 (after `npm install`):
+  - (Done by Claude: 58/58 pass.) Run `npm test -w backend`: all database tests should pass, including the new `metrics.service.test.ts` (4 tests: the hand-computed fixture, store time zone cut-offs, an empty store, and the index check). Tell Claude if any fail; todo #40 and #41 wait on this
+  - (Done by Claude: that account had never synced, so it got a first sync, nothing to rewrite.) **Re-sync your dev store once** (`POST /api/stores/<id>/sync`). Order lines now carry `refundedQuantity`, so every previously synced order is rewritten once (`updated` = all orders, COGS snapshots are kept). Until then, COGS of refunded orders is overstated
+  - (Done by Claude on the test database; only the dev-store re-sync above is left for you.) `GET /api/stores/<id>/metrics/summary?range=30d` (also `7d`, `90d`; no `range` means 30d) returns `range`, `metrics` (each with `current`, `previous`, `changeRatio`), and `costCoverage`. Sanity check: `netRevenueCents = grossRevenueCents − discountsCents − refundsCents`, and `netProfitCents = netRevenueCents − cogsCents`
+  - `range=1y` returns `400 VALIDATION_ERROR`; another user's store returns `404`; no token returns `401`
