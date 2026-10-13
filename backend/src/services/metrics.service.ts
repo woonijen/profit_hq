@@ -1,6 +1,8 @@
 import type { Types } from 'mongoose';
 import { buildSummary, type MetricsSummary } from '../metrics/summary.js';
 import { buildSummaryPipeline, type SummaryRow } from '../metrics/summary-pipeline.js';
+import { buildTrend, type MetricsTrend } from '../metrics/trend.js';
+import { buildTrendPipeline, type Granularity, type TrendRow } from '../metrics/trend-pipeline.js';
 import { Order } from '../models/order.model.js';
 import type { StoreDoc } from '../models/store.model.js';
 import type { RangeKey } from '../utils/date-range.js';
@@ -17,4 +19,18 @@ export async function getSummary(
   const resolved = resolveRange(range, store.timezone, now);
   const rows = await Order.aggregate<SummaryRow>(buildSummaryPipeline(store._id, resolved));
   return buildSummary(rows, resolved, store.currency);
+}
+
+/** Day-by-day (or month-by-month) series for the last `range` days of a store, gaps filled. */
+export async function getTrend(
+  store: MetricsStore,
+  range: RangeKey,
+  granularity: Granularity,
+  now = new Date(),
+): Promise<MetricsTrend> {
+  const resolved = resolveRange(range, store.timezone, now);
+  const rows = await Order.aggregate<TrendRow>(
+    buildTrendPipeline(store._id, resolved, granularity),
+  );
+  return buildTrend(rows, resolved, granularity, store.currency);
 }

@@ -72,6 +72,12 @@ function startOfLocalDay(year: number, month: number, day: number, timeZone: str
   return nominal - offsetMs(guess, timeZone);
 }
 
+/** The calendar date (`month` is 1–12) that the wall clock in `timeZone` shows at `instant`. */
+export function localDate(instant: Date, timeZone: string) {
+  const { year, month, day } = wallClock(instant.getTime(), timeZone);
+  return { year, month, day };
+}
+
 /**
  * Resolves `7d` / `30d` / `90d` into UTC bounds for the current and the previous period,
  * cut at midnight in the store's time zone. Today counts as a (partial) day of the current

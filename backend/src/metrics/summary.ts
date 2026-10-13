@@ -1,4 +1,5 @@
 import type { ResolvedRange } from '../utils/date-range.js';
+import type { PeriodSums } from './period-sums.js';
 import type { SummaryRow } from './summary-pipeline.js';
 
 /** A metric for both periods. `changeRatio` is relative (0.1 = up 10%); null if previous is 0. */
@@ -40,7 +41,7 @@ export interface MetricsSummary {
   costCoverage: { current: number; previous: number };
 }
 
-const EMPTY_ROW: Omit<SummaryRow, '_id'> = {
+export const EMPTY_SUMS: PeriodSums = {
   orders: 0,
   grossCents: 0,
   discountCents: 0,
@@ -51,7 +52,7 @@ const EMPTY_ROW: Omit<SummaryRow, '_id'> = {
 };
 
 /** Every metric of one period, derived from its summed totals (docs/metrics.md). */
-function deriveTotals(row: Omit<SummaryRow, '_id'> = EMPTY_ROW) {
+export function deriveTotals(row: PeriodSums = EMPTY_SUMS) {
   const netRevenue = row.grossCents - row.discountCents - row.refundedCents;
   const netProfit = netRevenue - row.cogsCents;
   return {

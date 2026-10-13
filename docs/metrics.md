@@ -73,14 +73,41 @@ Each metric is returned for the current and the previous period with its change:
 `metrics/summary.ts` then derives Net Revenue, Net Profit, AOV, margin and the comparisons from
 those sums (pure code, unit-tested without a database).
 
+## Trend
+
+`GET /api/stores/:storeId/metrics/trend?range=7d|30d|90d&granularity=day|month` returns the
+current period as a series, one point per day or month, for charts. It counts, costs and sums
+orders exactly like the summary (`metrics/period-sums.ts` is shared, and each point's figures
+come from the same `deriveTotals`), so the points of a range add up to the summary's current
+period. A test asserts that.
+
+Each point has `date`, `orders`, `grossRevenueCents`, `netRevenueCents`, `cogsCents`,
+`netProfitCents`, `netMargin` and `partial`. There is no previous-period series; the summary
+carries the comparison.
+
+- **Buckets are calendar days or months in the store's time zone.** `$dateTrunc` cuts at local
+  midnight (or the 1st) and `$dateToString` names the bucket by that local date, `YYYY-MM-DD`
+  (the 1st for months). The API sends dates, not instants, so the client never has to
+  re-interpret them in the store's zone. A DST day is a single bucket, 23 or 25 hours long.
+- **Gaps are filled.** Every day (or month) of the range gets a point; where nothing was sold the
+  money and order counts are 0 and `netMargin` is `null`. The pipeline returns only buckets
+  with orders, and `metrics/trend.ts` fills the rest, so the series is always continuous.
+- **Month buckets are clipped to the range.** `30d` ending Jan 15 gives a December bucket
+  (Dec 17–31 only) and a January bucket (Jan 1–15 only). A month that covers only part of its
+  calendar month inside the range has `partial: true`, so the UI can say so instead of
+  presenting it as a full month. Day buckets are never partial (today's is incomplete as in the
+  summary, but that is not flagged).
+- **`netMargin` is `null` on a bucket with no net revenue**, like everywhere else; a chart
+  should draw a gap there, not 0%.
+
 ## Indexes
 
 Review of the access path for the summary query:
 
 - **`(storeId, processedAt)` serves it.** Equality on `storeId` and a range on `processedAt` is
-  what this index is for. `summary` and the later trend queries (Phase 5) use the same prefix.
-  `backend/src/services/metrics.service.test.ts` asserts that the plan uses it and does not
-  collection-scan.
+  what this index is for. `summary` and `trend` use the same prefix.
+  `backend/src/services/metrics.service.test.ts` asserts, for both pipelines, that the plan
+  uses it and does not collection-scan.
 - **No covering index.** COGS needs every order's `lineItems`, which no reasonable index could
   hold, so the documents are always fetched.
 - **`financialStatus` is not in the index.** Adding it would only let the index skip the

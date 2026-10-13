@@ -61,10 +61,10 @@ Tasks that only you can do live in [user_todo.md](user_todo.md).
 
 ## Phase 5 — Trend data (backend)
 
-- [ ] 42. Aggregation pipeline: $dateTrunc by day|month in store timezone → revenue, COGS, net profit, net margin
-- [ ] 43. Gap-filling (zero rows for days with no orders) so charts have continuous series
-- [ ] 44. GET /api/stores/:id/metrics/trend?range=7d|30d|90d&granularity=day|month
-- [ ] 45. Tests for trend bucketing, timezone edge cases, gap fill
+- [x] 42. Aggregation pipeline: $dateTrunc by day|month in store timezone → revenue, COGS, net profit, net margin
+- [x] 43. Gap-filling (zero rows for days with no orders) so charts have continuous series
+- [x] 44. GET /api/stores/:id/metrics/trend?range=7d|30d|90d&granularity=day|month
+- [x] 45. Tests for trend bucketing, timezone edge cases, gap fill
 
 ## Phase 6 — Frontend: Sync + Dashboard + Trends
 
