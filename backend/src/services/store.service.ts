@@ -15,7 +15,7 @@ export async function ensureDefaultStore(ownerId: Types.ObjectId) {
   return Store.findOneAndUpdate(
     { shopDomain },
     { $setOnInsert: { ownerId, currency: DEFAULT_CURRENCY, timezone: DEFAULT_TIMEZONE } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   );
 }
 

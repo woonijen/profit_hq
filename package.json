@@ -2,7 +2,7 @@
   "name": "profit-hq",
   "version": "0.1.0",
   "private": true,
-  "description": "ProfitHQ — net profitability dashboard for Shopify merchants",
+  "description": "ProfitHQ \u2014 net profitability dashboard for Shopify merchants",
   "type": "module",
   "workspaces": [
     "backend",
@@ -22,6 +22,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
+    "seed": "npm run seed -w backend",
     "prepare": "husky"
   },
   "lint-staged": {

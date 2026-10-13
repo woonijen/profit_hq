@@ -49,7 +49,7 @@ export function CredentialsForm({
   return (
     <form onSubmit={(event) => void handleSubmit(event)} noValidate className="space-y-4">
       {formError && (
-        <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-danger-bg px-3 py-2 text-sm text-danger">
           {formError}
         </p>
       )}
@@ -72,7 +72,7 @@ export function CredentialsForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60"
+        className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg hover:bg-primary-hover disabled:opacity-60"
       >
         {pending ? pendingLabel : submitLabel}
       </button>

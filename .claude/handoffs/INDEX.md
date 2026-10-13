@@ -1,5 +1,6 @@
 # Handoff Index
 
+- [2026-10-13 23:35 Phases 5–7: trend, dashboard UI, quality/DX](2026-10-13-2335-phases-5-7-trend-dashboard-quality.md) — Trend endpoint, full dashboard + sync UI, Supertest/RTL tests, seed, OpenAPI, CI, Docker, README, ADRs, security hardening; 137 backend + 49 frontend tests pass, Phases 6–7 uncommitted, Docker/CI unverified.
 - [2026-10-13 16:30 Phases 3–4 verified and committed](2026-10-13-1630-phases-3-4-verified-committed.md) — 58/58 tests, dev store synced, summary endpoint verified; Phase 5 trend data is next.
 - [2026-10-13 15:59 Phase 4 summary metrics backend](2026-10-13-1559-phase-4-summary-metrics-backend.md) — metrics.md, date-range util, single-pass summary pipeline + GET summary endpoint, refundedQuantity on lines; DB tests written but unrun, todo 40–41 pending.
 - [2026-10-13 15:54 Phase 3 verified, Phase 4 next](2026-10-13-1554-phase-3-verified-phase-4-next.md) — DB tests (39/39) and manual API checks pass, task 34 and user_todo #14 ticked; Phase 4 starts with docs/metrics.md.

@@ -68,29 +68,29 @@ Tasks that only you can do live in [user_todo.md](user_todo.md).
 
 ## Phase 6 — Frontend: Sync + Dashboard + Trends
 
-- [ ] 46. Typed API hooks (TanStack Query): useSummary, useTrend, useSyncStatus, useStartSync
-- [ ] 47. Sync status state machine (idle → syncing → success | error → idle) via useReducer/mutation state
-- [ ] 48. SyncButton + SyncStatusIndicator (a11y: aria-live, disabled while syncing, auto-reset after success, retry on error)
-- [ ] 49. Skeleton components (card, chart) + Tailwind animate-pulse; shown while syncing/loading
-- [ ] 50. Metric cards: Gross Revenue, COGS, Net Profit, AOV (currency/percent formatters, delta vs prev period)
-- [ ] 51. Date range filter (7/30/90) synced to URL search params
-- [ ] 52. Recharts trend chart: revenue vs net margin (dual axis), tooltip, legend, responsive container
-- [ ] 53. Day/Month granularity toggle
-- [ ] 54. Empty / error / first-run states ("Run your first sync")
-- [ ] 55. Invalidate dashboard queries after successful sync
-- [ ] 56. Responsive layout + dark-mode-ready Tailwind tokens; accessibility pass (focus, contrast, chart labels)
+- [x] 46. Typed API hooks (TanStack Query): useSummary, useTrend, useSyncStatus, useStartSync
+- [x] 47. Sync status state machine (idle → syncing → success | error → idle) via useReducer/mutation state
+- [x] 48. SyncButton + SyncStatusIndicator (a11y: aria-live, disabled while syncing, auto-reset after success, retry on error)
+- [x] 49. Skeleton components (card, chart) + Tailwind animate-pulse; shown while syncing/loading
+- [x] 50. Metric cards: Gross Revenue, COGS, Net Profit, AOV (currency/percent formatters, delta vs prev period)
+- [x] 51. Date range filter (7/30/90) synced to URL search params
+- [x] 52. Recharts trend chart: revenue vs net margin (dual axis), tooltip, legend, responsive container
+- [x] 53. Day/Month granularity toggle
+- [x] 54. Empty / error / first-run states ("Run your first sync")
+- [x] 55. Invalidate dashboard queries after successful sync
+- [x] 56. Responsive layout + dark-mode-ready Tailwind tokens; accessibility pass (focus, contrast, chart labels)
 
 ## Phase 7 — Quality, DX & Portfolio polish
 
-- [ ] 57. Backend test setup: Vitest + Supertest against dedicated cloud test DB; auth flow tests incl. refresh reuse detection
-- [ ] 58. Frontend tests: auth guard, sync state machine, metric card formatting (Vitest + RTL)
-- [ ] 59. Seed script (npm run seed) to create demo user + store + mock data
-- [ ] 60. OpenAPI/Swagger doc (or typed route docs) for the API
-- [ ] 61. GitHub Actions CI: install, lint, typecheck, test, build
-- [ ] 62. Dockerfiles + docker-compose (app only; Mongo stays on Atlas)
-- [ ] 63. README: overview, screenshots, architecture diagram, setup, env table, API summary
-- [ ] 64. ADRs in docs/adr: token rotation, idempotent sync, COGS snapshot, aggregation design
-- [ ] 65. Security review pass: cookie flags, CORS, rate limits, NoSQL-injection sanitization, secrets, logging PII
+- [x] 57. Backend test setup: Vitest + Supertest against dedicated cloud test DB; auth flow tests incl. refresh reuse detection
+- [x] 58. Frontend tests: auth guard, sync state machine, metric card formatting (Vitest + RTL)
+- [x] 59. Seed script (npm run seed) to create demo user + store + mock data
+- [x] 60. OpenAPI/Swagger doc (or typed route docs) for the API
+- [x] 61. GitHub Actions CI: install, lint, typecheck, test, build
+- [x] 62. Dockerfiles + docker-compose (app only; Mongo stays on Atlas)
+- [x] 63. README: overview, screenshots, architecture diagram, setup, env table, API summary
+- [x] 64. ADRs in docs/adr: token rotation, idempotent sync, COGS snapshot, aggregation design
+- [x] 65. Security review pass: cookie flags, CORS, rate limits, NoSQL-injection sanitization, secrets, logging PII
 
 ## Phase 8 — Backlog (planned, not in current scope)
 

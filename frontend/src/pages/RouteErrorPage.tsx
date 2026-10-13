@@ -12,8 +12,8 @@ export function RouteErrorPage() {
   return (
     <div role="alert" className="mx-auto max-w-md p-8 text-center">
       <h1 className="text-xl font-semibold">Something went wrong</h1>
-      <p className="mt-2 text-slate-600">{message}</p>
-      <a href="/" className="mt-4 inline-block text-sm font-medium text-emerald-700 underline">
+      <p className="mt-2 text-ink-muted">{message}</p>
+      <a href="/" className="mt-4 inline-block text-sm font-medium text-accent-ink underline">
         Go back home
       </a>
     </div>
