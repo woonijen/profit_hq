@@ -6,6 +6,7 @@ import { RefreshToken } from '../models/refresh-token.model.js';
 import { User } from '../models/user.model.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../utils/tokens.js';
+import { ensureDefaultStore } from './store.service.js';
 
 export interface PublicUser {
   id: string;
@@ -78,13 +79,15 @@ export async function register(
   meta: SessionMeta,
 ): Promise<AuthSession> {
   const passwordHash = await hashPassword(input.password);
+  let user;
   try {
-    const user = await User.create({ email: input.email, passwordHash });
-    return await startSession(user, meta);
+    user = await User.create({ email: input.email, passwordHash });
   } catch (err) {
     if (isDuplicateKey(err)) throw AppError.conflict('An account with this email already exists');
     throw err;
   }
+  await ensureDefaultStore(user._id);
+  return startSession(user, meta);
 }
 
 export async function login(

@@ -32,13 +32,13 @@ Tasks that only you can do live in [user_todo.md](user_todo.md).
 
 ## Phase 2 — Domain model & simulated Shopify data
 
-- [ ] 22. Store model (ownerId, shopDomain, currency, timezone) + store bootstrap on register or first sync
-- [ ] 23. Product/variant model with unitCost; compound unique (storeId, shopifyId)
-- [ ] 24. Order model: embedded line items with COGS snapshot, discounts, taxes, refunds, financialStatus, processedAt; indexes for (storeId, processedAt) and unique (storeId, shopifyId); capture customer fields now for later Dead Stock / Retention work
-- [ ] 25. SyncRun model (status, counts inserted/updated/unchanged, startedAt/finishedAt, error)
-- [ ] 26. Shopify payload types + Zod schemas (orders, products, customers) modeled on the Admin GraphQL API (Order, LineItem, ProductVariant incl. inventoryItem.unitCost, Customer, Refund), simplified for the simulation
-- [ ] 27. Deterministic mock Shopify data generator (seeded RNG, N days of orders, refunds, discounts) — same seed ⇒ same payload; output shaped like real Admin GraphQL responses (edges/nodes, pageInfo cursors, MoneyV2 strings, gid:// ids)
-- [ ] 28. Mock "Shopify API" adapter behind a ShopifyClient interface (so a real client can be swapped in later)
+- [x] 22. Store model (ownerId, shopDomain, currency, timezone) + store bootstrap on register or first sync
+- [x] 23. Product/variant model with unitCost; compound unique (storeId, shopifyId)
+- [x] 24. Order model: embedded line items with COGS snapshot, discounts, taxes, refunds, financialStatus, processedAt; indexes for (storeId, processedAt) and unique (storeId, shopifyId); capture customer fields now for later Dead Stock / Retention work
+- [x] 25. SyncRun model (status, counts inserted/updated/unchanged, startedAt/finishedAt, error)
+- [x] 26. Shopify payload types + Zod schemas (orders, products, customers) modeled on the Admin GraphQL API (Order, LineItem, ProductVariant incl. inventoryItem.unitCost, Customer, Refund), simplified for the simulation
+- [x] 27. Deterministic mock Shopify data generator (seeded RNG, N days of orders, refunds, discounts) — same seed ⇒ same payload; output shaped like real Admin GraphQL responses (edges/nodes, pageInfo cursors, MoneyV2 strings, gid:// ids)
+- [x] 28. Mock "Shopify API" adapter behind a ShopifyClient interface (so a real client can be swapped in later)
 
 ## Phase 3 — Idempotent Sync Engine
 

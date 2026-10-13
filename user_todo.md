@@ -22,3 +22,7 @@ Legend: `[ ]` todo · `[x]` done. These are tasks only you can do. Claude's task
   - Reuse detection: log in, copy the `refresh_token` cookie value, reload once (rotates it), then paste the old value back and reload → you are logged out, and the newest cookie no longer works either
   - `GET /api/auth/me` without a token returns 401 with the standard error envelope
   - More than 10 failed logins in 15 minutes returns 429 `TOO_MANY_REQUESTS`
+- [x] 13. Manually test Phase 2 (after `npm run dev`):
+  - Register a new user → in Atlas, the `stores` collection has one document for them (`shopDomain` like `demo-xxxxxxxx.myshopify.com`, currency `USD`, timezone `UTC`)
+  - Existing users registered before Phase 2 have no store yet; that is expected (the sync in Phase 3 will create it)
+  - Registering with a duplicate email still returns 409 and creates no store
