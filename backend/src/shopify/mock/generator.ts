@@ -46,6 +46,28 @@ const LAST_NAMES = [
 ] as const;
 const SIZE_TITLES = ['Small', 'Medium', 'Large'] as const;
 
+/**
+ * Products that stop selling, so every dead-stock case exists in the demo data. They sit near
+ * the head of the catalog, where sales are frequent, so the last sale lands close to the
+ * cutoff. `lastSaleDaysAgo: null` = never sells; `createdDaysAgo` then says how long it has
+ * been in the shop. All stalled products are ACTIVE and in stock.
+ */
+const STALLED_PRODUCTS: readonly {
+  index: number;
+  lastSaleDaysAgo: number | null;
+  createdDaysAgo?: number;
+  costKnown?: boolean;
+}[] = [
+  { index: 1, lastSaleDaysAgo: 20 }, // still inside every window: not dead
+  { index: 2, lastSaleDaysAgo: 35 }, // dead for 30d, 15% markdown
+  { index: 3, lastSaleDaysAgo: 50 }, // dead for 30d, 15% markdown
+  { index: 4, lastSaleDaysAgo: 65 }, // dead for 60d, 30% markdown
+  { index: 5, lastSaleDaysAgo: 80 }, // dead for 60d, 30% markdown
+  { index: 6, lastSaleDaysAgo: null, createdDaysAgo: 150 }, // never sold: dead for 90d, 50%
+  { index: 7, lastSaleDaysAgo: null, createdDaysAgo: 100, costKnown: false }, // cost missing
+  { index: 8, lastSaleDaysAgo: null, createdDaysAgo: 10 }, // brand new: not dead yet
+];
+
 export interface MockShopOptions {
   /** Same seed (and options) ⇒ identical payloads. */
   seed: number;
@@ -75,6 +97,8 @@ interface CatalogEntry {
   productTitle: string;
   variant: ShopifyProductVariant;
   priceCents: number;
+  /** The variant stops selling after this instant. Undefined = sells throughout. */
+  soldUntilMs?: number;
 }
 
 const gid = (type: string, n: number) => `gid://shopify/${type}/${n}`;
@@ -87,28 +111,46 @@ function toBag(cents: number, currencyCode: string): ShopifyMoneyBag {
   return { shopMoney: toMoney(cents, currencyCode) };
 }
 
-function buildProducts(rng: Rng, count: number, currencyCode: string, updatedAt: string) {
+function buildProducts(
+  rng: Rng,
+  count: number,
+  currencyCode: string,
+  window: { startMs: number; endMs: number },
+) {
   const catalog: CatalogEntry[] = [];
   let variantSeq = 0;
+  const updatedAt = new Date(window.startMs).toISOString();
 
   const products = Array.from({ length: count }, (_, i): ShopifyProduct => {
     const productId = gid('Product', 1_000_000 + i);
     const productTitle = `${rng.pick(ADJECTIVES)} ${rng.pick(NOUNS)}`;
     const basePriceCents = rng.int(15, 120) * 100 - 1; // e.g. 2499
     const variantCount = rng.int(1, 3);
+    const stalled = STALLED_PRODUCTS.find((s) => s.index === i);
+    // Older than the order history, so a product that sells is never "new". No random draw,
+    // to keep the rest of the data independent of this.
+    const createdDaysAgo = stalled?.createdDaysAgo ?? 90 + 30 + ((i * 53) % 300);
+    const createdAt = new Date(window.endMs - createdDaysAgo * DAY_MS).toISOString();
+    const soldUntilMs =
+      stalled === undefined
+        ? undefined
+        : stalled.lastSaleDaysAgo === null
+          ? Number.NEGATIVE_INFINITY
+          : window.endMs - stalled.lastSaleDaysAgo * DAY_MS;
 
     const variants = Array.from({ length: variantCount }, (_, v): ShopifyProductVariant => {
       variantSeq += 1;
       const priceCents = basePriceCents + v * 500;
       // ~5% of variants have no cost entered, so downstream code has to handle unknown COGS.
-      const hasCost = !rng.chance(0.05);
+      const hasCost = !rng.chance(0.05) && stalled?.costKnown !== false;
       const costCents = Math.round(priceCents * (0.25 + rng.next() * 0.35));
       return {
         id: gid('ProductVariant', 4_000_000 + variantSeq),
         title: variantCount === 1 ? 'Default Title' : (SIZE_TITLES[v] ?? `Option ${v + 1}`),
         sku: `SKU-${1000 + i}-${v + 1}`,
         price: (priceCents / 100).toFixed(2),
-        inventoryQuantity: rng.int(0, 200),
+        // A stalled product is in stock; that is what makes its stagnation a problem.
+        inventoryQuantity: stalled ? rng.int(20, 200) : rng.int(0, 200),
         inventoryItem: { unitCost: hasCost ? toMoney(costCents, currencyCode) : null },
       };
     });
@@ -119,13 +161,15 @@ function buildProducts(rng: Rng, count: number, currencyCode: string, updatedAt:
         productTitle,
         variant,
         priceCents: Math.round(Number(variant.price) * 100),
+        soldUntilMs,
       });
     }
 
     return {
       id: productId,
       title: productTitle,
-      status: rng.chance(0.08) ? 'ARCHIVED' : 'ACTIVE',
+      status: rng.chance(0.08) && !stalled ? 'ARCHIVED' : 'ACTIVE',
+      createdAt,
       updatedAt,
       variants: singlePage(variants),
     };
@@ -175,10 +219,13 @@ function buildOrder(
   const { rng, catalog, customers, currencyCode, endMs } = ctx;
 
   // Lower catalog indexes sell more, so a few best-sellers dominate like in a real shop.
+  const sellable = catalog.filter(
+    (entry) => entry.soldUntilMs === undefined || processedAtMs <= entry.soldUntilMs,
+  );
   const entries = new Set<CatalogEntry>();
-  const lineCount = Math.min(rng.int(1, 3), catalog.length);
+  const lineCount = Math.min(rng.int(1, 3), sellable.length);
   while (entries.size < lineCount) {
-    const entry = catalog[Math.floor(rng.next() ** 2 * catalog.length)];
+    const entry = sellable[Math.floor(rng.next() ** 2 * sellable.length)];
     if (entry) entries.add(entry);
   }
 
@@ -293,12 +340,10 @@ export function generateMockShop(options: MockShopOptions): MockShopData {
   const endMs = endDate.getTime();
   const startMs = endMs - days * DAY_MS;
 
-  const { products, catalog } = buildProducts(
-    rng,
-    productCount,
-    currencyCode,
-    new Date(startMs).toISOString(),
-  );
+  const { products, catalog } = buildProducts(rng, productCount, currencyCode, {
+    startMs,
+    endMs,
+  });
   const customers = buildCustomers(rng, customerCount, startMs);
 
   // Pick every timestamp first and sort, so order numbers and ids increase with time.

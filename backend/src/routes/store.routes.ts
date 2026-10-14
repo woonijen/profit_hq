@@ -1,9 +1,11 @@
 import { type RequestHandler, Router } from 'express';
+import * as inventoryController from '../controllers/inventory.controller.js';
 import * as metricsController from '../controllers/metrics.controller.js';
 import * as storeController from '../controllers/store.controller.js';
 import { requireAuth } from '../middleware/require-auth.js';
 import { syncRateLimit } from '../middleware/sync-rate-limit.js';
 import { validate } from '../middleware/validate.js';
+import { deadStockQuery } from '../schemas/inventory.schemas.js';
 import { summaryQuery, trendQuery } from '../schemas/metrics.schemas.js';
 import { storeParams } from '../schemas/store.schemas.js';
 
@@ -36,6 +38,11 @@ export function createStoreRouter(options: { rateLimits: boolean }): Router {
     '/:storeId/metrics/trend',
     validate({ params: storeParams, query: trendQuery }),
     metricsController.trend,
+  );
+  router.get(
+    '/:storeId/inventory/dead-stock',
+    validate({ params: storeParams, query: deadStockQuery }),
+    inventoryController.deadStock,
   );
 
   return router;

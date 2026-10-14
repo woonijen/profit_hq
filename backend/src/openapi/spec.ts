@@ -7,8 +7,10 @@
  * mirror the service/controller return types and `docs/metrics.md`.
  */
 import { z } from 'zod';
+import { DEAD_STOCK_WINDOWS } from '../inventory/dead-stock.js';
 import { GRANULARITIES } from '../metrics/trend-pipeline.js';
 import { loginBody, registerBody } from '../schemas/auth.schemas.js';
+import { deadStockQuery } from '../schemas/inventory.schemas.js';
 import { summaryQuery, trendQuery } from '../schemas/metrics.schemas.js';
 import { storeParams } from '../schemas/store.schemas.js';
 import { RANGE_KEYS } from '../utils/date-range.js';
@@ -196,6 +198,46 @@ const schemas: Record<string, Json> = {
     granularity: { enum: [...GRANULARITIES] },
     points: { type: 'array', items: ref('TrendPoint') },
   }),
+  DeadStockItem: object({
+    variantId: { type: 'string', description: 'Shopify id of the variant' },
+    productId: { type: 'string' },
+    productTitle: { type: 'string' },
+    variantTitle: { type: 'string' },
+    sku: { type: ['string', 'null'] },
+    inventoryQuantity: integer('Units in stock'),
+    unitCostCents: {
+      type: ['integer', 'null'],
+      description: 'Cost per unit, integer cents; null when the merchant never entered one.',
+    },
+    stockValueCents: {
+      type: ['integer', 'null'],
+      description: 'Quantity × unit cost, integer cents; null when the cost is unknown.',
+    },
+    lastSoldAt: {
+      oneOf: [dateTime, { type: 'null' }],
+      description: 'Most recent sale with a unit that was not refunded; null = never sold.',
+    },
+    daysInactive: integer(
+      'Calendar days in the store time zone since the last sale, or since the product was created if it never sold',
+    ),
+  }),
+  DeadStockReport: object({
+    window: { enum: [...DEAD_STOCK_WINDOWS] },
+    asOf: dateTime,
+    totals: object({
+      variants: integer('Dead variants over all pages'),
+      units: integer(),
+      stockValueCents: cents('Capital tied up, counting only variants with a known cost'),
+      variantsMissingCost: integer('Dead variants left out of `stockValueCents`'),
+    }),
+    items: { type: 'array', items: ref('DeadStockItem') },
+    page: object({
+      number: integer(),
+      size: integer(),
+      totalItems: integer(),
+      totalPages: integer(),
+    }),
+  }),
   HealthReport: object({
     status: { enum: ['ok', 'degraded'] },
     uptimeSeconds: integer(),
@@ -238,6 +280,7 @@ export const openApiSpec: Json = {
     { name: 'Stores' },
     { name: 'Sync', description: 'Idempotent import of products and orders.' },
     { name: 'Metrics' },
+    { name: 'Inventory', description: 'Dead stock: in-stock variants that stopped selling.' },
   ],
   paths: {
     '/health': {
@@ -390,6 +433,23 @@ export const openApiSpec: Json = {
         parameters: [...storeIdParameters, ...parametersOf('query', trendQuery)],
         responses: {
           '200': response('Trend', ref('MetricsTrend')),
+          '400': validationError,
+          ...authErrors,
+        },
+      },
+    },
+    '/stores/{storeId}/inventory/dead-stock': {
+      get: {
+        tags: ['Inventory'],
+        operationId: 'getDeadStock',
+        summary: 'In-stock variants with no sale in the last 30, 60 or 90 days',
+        description:
+          'A variant is dead for a window of N days when it has stock and did not sell on any of ' +
+          'the last N calendar days of the store time zone. Definitions: `docs/dead-stock.md`.',
+        security: secured,
+        parameters: [...storeIdParameters, ...parametersOf('query', deadStockQuery)],
+        responses: {
+          '200': response('Dead stock', ref('DeadStockReport')),
           '400': validationError,
           ...authErrors,
         },

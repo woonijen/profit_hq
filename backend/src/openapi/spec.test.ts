@@ -57,6 +57,7 @@ describe('OpenAPI spec', () => {
         'GET /stores/{storeId}/sync/latest',
         'GET /stores/{storeId}/metrics/summary',
         'GET /stores/{storeId}/metrics/trend',
+        'GET /stores/{storeId}/inventory/dead-stock',
       ].sort(),
     );
   });

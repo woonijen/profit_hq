@@ -25,6 +25,9 @@ const productSchema = new Schema(
     title: { type: String, required: true },
     status: { type: String, required: true, enum: PRODUCT_STATUSES },
     variants: { type: [variantSchema], default: [] },
+    // When the product was created in Shopify. Dead-stock analysis counts the days a product
+    // that never sold has been on the shelf from here.
+    shopifyCreatedAt: { type: Date, required: true },
     shopifyUpdatedAt: { type: Date, required: true },
     // Hash of the mapped fields; lets the sync skip rewriting documents that did not change.
     contentHash: { type: String, required: true },

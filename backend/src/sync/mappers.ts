@@ -39,6 +39,7 @@ export interface MappedProduct {
   title: string;
   status: ShopifyProduct['status'];
   variants: MappedVariant[];
+  shopifyCreatedAt: Date;
   shopifyUpdatedAt: Date;
   contentHash: string;
 }
@@ -136,6 +137,7 @@ export function mapProduct(ctx: MapContext, product: ShopifyProduct): MappedProd
     title: product.title,
     status: product.status,
     variants,
+    shopifyCreatedAt: new Date(product.createdAt),
     shopifyUpdatedAt: new Date(product.updatedAt),
   };
   return { storeId: ctx.storeId, ...fields, contentHash: hashContent(fields) };

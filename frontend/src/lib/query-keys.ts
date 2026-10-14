@@ -1,3 +1,4 @@
+import type { DeadStockQuery } from '@/features/inventory/types';
 import type { Granularity, RangeKey } from '@/features/metrics/types';
 
 /** One place for TanStack Query keys, so invalidating a prefix reaches everything under it. */
@@ -9,5 +10,18 @@ export const queryKeys = {
     ['stores', storeId, 'metrics', 'summary', range] as const,
   trend: (storeId: string, range: RangeKey, granularity: Granularity) =>
     ['stores', storeId, 'metrics', 'trend', range, granularity] as const,
+  /** Prefix of every inventory query of a store: invalidate this after a sync. */
+  storeInventory: (storeId: string) => ['stores', storeId, 'inventory'] as const,
+  deadStock: (storeId: string, query: DeadStockQuery) =>
+    [
+      'stores',
+      storeId,
+      'inventory',
+      'dead-stock',
+      query.window,
+      query.sort,
+      query.direction,
+      query.page,
+    ] as const,
   latestSync: (storeId: string) => ['stores', storeId, 'sync', 'latest'] as const,
 };

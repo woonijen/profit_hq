@@ -55,6 +55,7 @@ export const productSchema = z.object({
   id: gid('Product'),
   title: z.string(),
   status: z.enum(['ACTIVE', 'ARCHIVED', 'DRAFT']),
+  createdAt: isoDateTime,
   updatedAt: isoDateTime,
   variants: connectionSchema(productVariantSchema),
 });

@@ -5,7 +5,10 @@ import { SyncButton } from '@/features/sync/SyncButton';
 import { SyncProvider } from '@/features/sync/SyncProvider';
 import { SyncStatusIndicator } from '@/features/sync/SyncStatusIndicator';
 
-const navItems = [{ to: '/', label: 'Dashboard' }];
+const navItems = [
+  { to: '/', label: 'Dashboard' },
+  { to: '/dead-stock', label: 'Dead stock' },
+];
 
 export function AppLayout() {
   const { state, logout } = useAuth();

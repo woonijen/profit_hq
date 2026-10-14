@@ -56,3 +56,9 @@ Legend: `[ ]` todo · `[x]` done. These are tasks only you can do. Claude's task
 - [ ] 20. In GitHub, once the repo exists (#9): add the repository secret `MONGODB_URI_TEST` (Settings, Secrets and variables, Actions) and check that the first CI run is green; without the secret CI still passes but skips the database tests
 - [ ] 21. Add screenshots for the README (see #10): save them as `docs/screenshots/dashboard.png` (and a dark-mode one), then uncomment the image line in the README's screenshot comment
 
+- [x] 22. Test Dead-Stock Planner (Phase 9, tasks 70–75, 83):
+  - Run `npm test` with `MONGODB_URI_TEST` set. The new database tests (`inventory.service.test.ts`) have not been run, because Claude does not run database tests
+  - Sync again (the Sync button, or `npm run seed`): products now carry a created date, so the first sync after this change rewrites every product. The mock data also changed, so the demo store has stalled products
+  - Open "Dead stock" in the sidebar: the list should shrink as the window grows (30 ⊇ 60 ⊇ 90), the two never-sold products stay in all three (one shows "Cost missing"), and the exact counts depend on the random catalog. The product created 10 days ago and the one that sold 20 days ago never appear
+  - The 30/60/90 buttons change the table and the URL (`?window=60`); sorting by the column headers flips ascending/descending; with fewer than 26 rows there is no pagination (expected)
+  - After a sync finishes, the table refreshes by itself

@@ -60,6 +60,10 @@ describe('mapProduct', () => {
     expect(mapped.variants[0]?.priceCents).toBe(toCents(variant?.price ?? ''));
   });
 
+  it('keeps when the product was created, for dead-stock aging', () => {
+    expect(mapProduct(ctx, product).shopifyCreatedAt).toEqual(new Date(product.createdAt));
+  });
+
   it('keeps an unknown cost as null rather than 0', () => {
     const unknownCost = structuredClone(product);
     for (const edge of unknownCost.variants.edges) edge.node.inventoryItem.unitCost = null;

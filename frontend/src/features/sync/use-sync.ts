@@ -28,6 +28,7 @@ export function useSync(storeId: string | undefined) {
     // A failed run may still have written some pages, so refresh in that case too.
     if (storeId && finishedRun) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.storeMetrics(storeId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.storeInventory(storeId) });
     }
   }, [queryClient, storeId, finishedRun]);
 

@@ -1,5 +1,7 @@
 # Metric definitions
 
+Dead-stock definitions (the inventory side) live in [dead-stock.md](dead-stock.md).
+
 Exact definitions behind every number on the dashboard. The aggregation code
 (`backend/src/metrics/`) implements this document; if the two disagree, fix whichever is wrong.
 
