@@ -106,7 +106,7 @@ Three features: Dead-Stock Planner (products with stock but zero line-item sales
 ### Foundation
 
 - [x] 70. docs/dead-stock.md: write up the decisions below and link it from docs/metrics.md. (Done; the doc refines (b) to reuse the revenue metrics' counted order statuses, and (c) to calendar days in the store time zone, like the dashboard ranges.) **Decided:** (a) unit of analysis is the variant (that is where `inventoryQuantity` lives); the UI can group rows by product. (b) Dead stock = `inventoryQuantity > 0` on an ACTIVE product and zero net units sold in the window, where a line's net units = `quantity − refundedQuantity`, so a fully refunded line is not a sale; order-level cancelled/voided orders are excluded. (c) Windows are rolling 30/60/90 days ending now, in the store timezone; a variant is dead for window W if its last sale is older than W days. (d) Days inactive = days since last net sale; if it never sold, days since the product's Shopify created date (so a brand-new product is not flagged). (e) Holding cost per variant per month = `inventoryQuantity × unitCost × holdingCostRate`. (f) Markdown tiers by days inactive: under 30d → none, 30–59d → 15%, 60–89d → 30%, 90d+ → 50%; a tier applies only if the variant is dead for that window. (g) Variants with null unit cost still get flagged and markdown suggestions, but are excluded from holding-cost totals and marked "cost missing"
-- [ ] 71. Store settings: add `holdingCostRate` to the Store model as a fraction of stock value per month (**default 0.02 = 2%/month**, validated 0–1, stored as a number not a percent string; the UI shows it as a percent) + Zod validation + a named default constant (no `.env` var). Documented in task 70
+- [x] 71. Store settings: add `holdingCostRate` to the Store model as a fraction of stock value per month (**default 0.02 = 2%/month**, validated 0–1, stored as a number not a percent string; the UI shows it as a percent) + Zod validation + a named default constant (no `.env` var). Documented in task 70
 - [x] 72. Mock data + seed: make the generator deterministically produce dead-stock scenarios (variants with stock but no sales for 30/60/90+ days, a never-sold variant, a variant with null unitCost) with varied `inventoryQuantity`; confirm the sync mapper carries `inventoryQuantity` through; update seed script
 
 ### Dead-Stock Planner (backend)
@@ -117,23 +117,23 @@ Three features: Dead-Stock Planner (products with stock but zero line-item sales
 
 ### Holding Cost Calculator (backend)
 
-- [ ] 76. Pure holding-cost function: monthly cost = qty × unitCost × holdingCostRate; handle `unitCostCents == null` (excluded from totals, flagged as "cost missing"); integer-cents math, no float drift
-- [ ] 77. `PATCH /api/stores/:id/settings` to update `holdingCostRate` (auth + ownership + validation); include per-row and total monthly holding cost + capital tied up in the dead-stock response
-- [ ] 78. Unit tests for the holding-cost function (rounding, null cost, zero stock, rate edge cases) + endpoint test for the settings update
+- [x] 76. Pure holding-cost function: monthly cost = qty × unitCost × holdingCostRate; handle `unitCostCents == null` (excluded from totals, flagged as "cost missing"); integer-cents math, no float drift
+- [x] 77. `PATCH /api/stores/:id/settings` to update `holdingCostRate` (auth + ownership + validation); include per-row and total monthly holding cost + capital tied up in the dead-stock response
+- [x] 78. Unit tests for the holding-cost function (rounding, null cost, zero stock, rate edge cases) + endpoint test for the settings update
 
 ### Smart Markdowns (backend)
 
-- [ ] 79. Pure markdown-tier function: days inactive → none (<30) / 15% (30–59) / 30% (60–89) / 50% (90+); thresholds as named constants matching docs/dead-stock.md
-- [ ] 80. Include `suggestedDiscountPct`, `suggestedPriceCents` and margin after markdown in each row; warn when the suggested price falls below unit cost (never recommend selling at a loss silently)
-- [ ] 81. Unit tests for tier boundaries and below-cost warning
+- [x] 79. Pure markdown-tier function: days inactive → none (<30) / 15% (30–59) / 30% (60–89) / 50% (90+); thresholds as named constants matching docs/dead-stock.md
+- [x] 80. Include `suggestedDiscountPct`, `suggestedPriceCents` and margin after markdown in each row; warn when the suggested price falls below unit cost (never recommend selling at a loss silently)
+- [x] 81. Unit tests for tier boundaries and below-cost warning
 
 ### Frontend
 
-- [ ] 82. Typed API hooks (TanStack Query): useDeadStock, useStoreSettings, useUpdateHoldingCostRate (invalidate dead-stock query on update; invalidate after successful sync too). Done so far: useDeadStock + invalidation after sync; the settings hooks come with task 77/85
+- [x] 82. Typed API hooks (TanStack Query): useDeadStock, useUpdateHoldingCostRate (invalidates the inventory queries on update; inventory is invalidated after a sync too). The settings come with the stores list (`store.settings`), so there is no separate useStoreSettings hook
 - [x] 83. Dead-Stock page + route + sidebar nav entry; 30/60/90 window filter synced to URL search params (reuse the date-range filter pattern); sortable, paginated table
-- [ ] 84. Summary cards: dead SKUs, units stuck, capital tied up, monthly holding cost
-- [ ] 85. Holding cost rate control (inline editable, validated, a11y labels) wired to the settings endpoint
-- [ ] 86. Smart Markdown column: discount badge (15/30/50%), suggested price, below-cost warning styling that does not rely on color alone
+- [x] 84. Summary cards: dead SKUs, units stuck, capital tied up, monthly holding cost
+- [x] 85. Holding cost rate control (inline editable, validated, a11y labels) wired to the settings endpoint
+- [x] 86. Smart Markdown column: discount badge (15/30/50%), suggested price, below-cost warning styling that does not rely on color alone
 - [ ] 87. Skeleton, empty ("No dead stock, nice"), error and first-run states; responsive table; dark-mode tokens; accessibility pass
 - [ ] 88. Frontend tests: window filter URL sync, markdown badge rendering, holding cost rate form, formatters
 

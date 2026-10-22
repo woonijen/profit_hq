@@ -3,6 +3,8 @@
  * service feeds it products and last-sale dates. Definitions: docs/dead-stock.md.
  */
 import { localDate } from '../utils/date-range.js';
+import { holdingCostCents } from './holding-cost.js';
+import { type MarkdownSuggestion, suggestMarkdown } from './markdown.js';
 
 export const DEAD_STOCK_WINDOWS = [30, 60, 90] as const;
 export type DeadStockWindow = (typeof DEAD_STOCK_WINDOWS)[number];
@@ -24,12 +26,14 @@ export interface StockedProduct {
     shopifyId: string;
     title: string;
     sku: string | null;
+    /** What the variant sells for now. */
+    priceCents: number;
     unitCostCents: number | null;
     inventoryQuantity: number;
   }[];
 }
 
-export interface DeadStockItem {
+export interface DeadStockItem extends MarkdownSuggestion {
   variantId: string;
   productId: string;
   productTitle: string;
@@ -37,10 +41,14 @@ export interface DeadStockItem {
   variantTitle: string;
   sku: string | null;
   inventoryQuantity: number;
+  /** Current selling price, integer cents. */
+  priceCents: number;
   /** null = the merchant never entered a cost. */
   unitCostCents: number | null;
   /** quantity × unit cost; null when the cost is unknown. */
   stockValueCents: number | null;
+  /** Monthly cost of holding this stock at the store's rate; null when the cost is unknown. */
+  holdingCostCents: number | null;
   /** null = never sold. */
   lastSoldAt: Date | null;
   /** Whole calendar days in the store's time zone since the last sale (or since creation). */
@@ -53,7 +61,9 @@ export interface DeadStockTotals {
   units: number;
   /** Capital tied up: the stock value of the variants whose cost is known. */
   stockValueCents: number;
-  /** Dead variants without a cost, which are left out of `stockValueCents`. */
+  /** Monthly holding cost of the variants whose cost is known: the sum of the rows' costs. */
+  monthlyHoldingCostCents: number;
+  /** Dead variants without a cost, which are left out of both money totals. */
   variantsMissingCost: number;
 }
 
@@ -69,6 +79,8 @@ export interface DeadStockQuery {
 export interface DeadStockReport {
   window: DeadStockWindow;
   asOf: Date;
+  /** The store's monthly holding cost rate the costs were worked out with (0.02 = 2%). */
+  holdingCostRate: number;
   totals: DeadStockTotals;
   items: DeadStockItem[];
   page: { number: number; size: number; totalItems: number; totalPages: number };
@@ -91,8 +103,9 @@ export function daysInactive(since: Date, now: Date, timeZone: string): number {
 
 /**
  * Every in-stock variant that did not sell in the last `window` days. `lastSoldAt` maps a
- * variant id to its last sale; absent means it never sold. Archived and draft products must be
- * filtered out by the caller. Unsorted.
+ * variant id to its last sale; absent means it never sold. `holdingCostRate` prices the
+ * monthly holding cost of every row. Archived and draft products must be filtered out by the
+ * caller. Unsorted.
  */
 export function findDeadStock(
   products: readonly StockedProduct[],
@@ -100,6 +113,7 @@ export function findDeadStock(
   window: DeadStockWindow,
   timeZone: string,
   now: Date,
+  holdingCostRate: number,
 ): DeadStockItem[] {
   const items: DeadStockItem[] = [];
   for (const product of products) {
@@ -117,11 +131,18 @@ export function findDeadStock(
         variantTitle: variant.title,
         sku: variant.sku,
         inventoryQuantity: variant.inventoryQuantity,
+        priceCents: variant.priceCents,
         unitCostCents: variant.unitCostCents,
         stockValueCents:
           variant.unitCostCents === null ? null : variant.unitCostCents * variant.inventoryQuantity,
+        holdingCostCents: holdingCostCents(
+          variant.inventoryQuantity,
+          variant.unitCostCents,
+          holdingCostRate,
+        ),
         lastSoldAt: soldAt,
         daysInactive: idleDays,
+        ...suggestMarkdown(idleDays, variant.priceCents, variant.unitCostCents),
       });
     }
   }
@@ -133,6 +154,7 @@ export function totalDeadStock(items: readonly DeadStockItem[]): DeadStockTotals
     variants: items.length,
     units: items.reduce((sum, item) => sum + item.inventoryQuantity, 0),
     stockValueCents: items.reduce((sum, item) => sum + (item.stockValueCents ?? 0), 0),
+    monthlyHoldingCostCents: items.reduce((sum, item) => sum + (item.holdingCostCents ?? 0), 0),
     variantsMissingCost: items.filter((item) => item.stockValueCents === null).length,
   };
 }
@@ -173,14 +195,16 @@ export function buildDeadStockReport(
   query: DeadStockQuery,
   timeZone: string,
   now: Date,
+  holdingCostRate: number,
 ): DeadStockReport {
-  const dead = findDeadStock(products, lastSoldAt, query.window, timeZone, now);
+  const dead = findDeadStock(products, lastSoldAt, query.window, timeZone, now, holdingCostRate);
   const sorted = sortDeadStock(dead, query.sort, query.direction);
   const start = (query.page - 1) * query.pageSize;
 
   return {
     window: query.window,
     asOf: now,
+    holdingCostRate,
     totals: totalDeadStock(dead),
     items: sorted.slice(start, start + query.pageSize),
     page: {

@@ -53,6 +53,7 @@ describe('OpenAPI spec', () => {
         'POST /auth/logout',
         'GET /auth/me',
         'GET /stores',
+        'PATCH /stores/{storeId}/settings',
         'POST /stores/{storeId}/sync',
         'GET /stores/{storeId}/sync/latest',
         'GET /stores/{storeId}/metrics/summary',

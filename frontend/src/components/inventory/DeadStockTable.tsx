@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/Skeleton';
+import { MarkdownCell } from './MarkdownCell';
 import { formatInteger, formatMoney } from '@/features/metrics/format';
 import { formatDays, formatLastSold } from '@/features/inventory/format';
 import type { DeadStockItem, DeadStockSort, SortDirection } from '@/features/inventory/types';
@@ -46,7 +47,7 @@ export function DeadStockTable({ items, currency, sort, direction, onSort }: Dea
   const header = { activeSort: sort, direction, onSort };
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-card shadow-sm">
-      <table className="w-full min-w-[40rem] text-sm">
+      <table className="w-full min-w-[60rem] text-sm">
         <caption className="sr-only">Products in stock that have not sold</caption>
         <thead className="border-b border-line text-ink-muted">
           <tr>
@@ -55,6 +56,12 @@ export function DeadStockTable({ items, currency, sort, direction, onSort }: Dea
             </th>
             <SortableHeader label="In stock" column="quantity" {...header} />
             <SortableHeader label="Stock value" column="stockValue" {...header} />
+            <th scope="col" className="px-4 py-3 text-right font-medium">
+              Holding cost / month
+            </th>
+            <th scope="col" className="px-4 py-3 text-right font-medium">
+              Suggested markdown
+            </th>
             <th scope="col" className="px-4 py-3 text-right font-medium">
               Last sold
             </th>
@@ -81,6 +88,16 @@ export function DeadStockTable({ items, currency, sort, direction, onSort }: Dea
                 ) : (
                   formatMoney(item.stockValueCents, currency)
                 )}
+              </td>
+              <td className="px-4 py-3 text-right tabular-nums">
+                {item.holdingCostCents === null ? (
+                  <span className="text-ink-muted">Cost missing</span>
+                ) : (
+                  formatMoney(item.holdingCostCents, currency)
+                )}
+              </td>
+              <td className="px-4 py-3 text-right">
+                <MarkdownCell item={item} currency={currency} />
               </td>
               <td className="px-4 py-3 text-right text-ink-muted tabular-nums">
                 {formatLastSold(item.lastSoldAt)}

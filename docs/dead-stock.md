@@ -57,10 +57,28 @@ in the last N days", so a bigger window is a subset of a smaller one.
   (default) or `asc`. Rows without a value (unknown cost) always come last; ties are broken by
   product title, then variant id, so paging is stable.
 - `totals` cover every dead variant, not just the page: variant count, units, and **capital tied
-  up** (`stockValueCents`).
+  up** (`stockValueCents`) and the **monthly holding cost** (`monthlyHoldingCostCents`).
 - **Stock value** is `inventoryQuantity × unitCost`. A variant without a cost has no value
-  (`null`): it is still listed, but left out of `stockValueCents` and counted in
-  `variantsMissingCost`, the same "unknown is not free" rule as COGS.
+  (`null`): it is still listed, but left out of `stockValueCents` and
+  `monthlyHoldingCostCents`, and counted in `variantsMissingCost`: the same "unknown is not
+  free" rule as COGS.
+
+## Holding cost
+
+What it costs to keep the stuck stock: storage, insurance, and the money tied up in it.
+
+- Per variant per month = `inventoryQuantity × unitCost × holdingCostRate`, rounded half up to a
+  whole cent. `null` when the unit cost is unknown ("cost missing").
+- `monthlyHoldingCostCents` in `totals` is the sum of the **rounded rows** over every dead
+  variant (not just the page), so the total always equals what the rows add up to.
+- The rate is a per-store setting, `holdingCostRate`: a fraction of stock value per month,
+  **default 0.02 (2%)**, from 0 to 1 in steps of 0.0001 (0.01%). It is stored as a fraction
+  (the UI shows a percent) and stores created before the setting read as the default. The
+  report echoes the rate it used as `holdingCostRate`.
+- Change it with `PATCH /api/stores/:storeId/settings` (`{ "holdingCostRate": 0.035 }`); the
+  stores list carries it as `settings.holdingCostRate`.
+- The 0.01% step is deliberate: the arithmetic is `quantity × cost × (rate × 10 000) ÷ 10 000`
+  on integers, so there is no float drift and a half cent always rounds the same way.
 
 ## How it is computed
 
@@ -93,12 +111,30 @@ so every case exists in the demo store: products that stopped selling 20, 35, 50
 before the end of the history, two that never sold (one with a missing cost), and one created 10
 days ago. All of them are active and in stock. Run `npm run seed`, or sync, to load them.
 
-## Planned (not built yet)
+## Markdown suggestions
 
-Holding cost and markdown suggestions build on these rows; see `todo.md`, Phase 9.
+Every row carries a suggested discount, picked by its **days inactive**:
 
-- **Holding cost** per variant per month = `inventoryQuantity × unitCost × holdingCostRate`. The
-  rate is a per-store fraction of stock value per month, **default 0.02 (2%)**. Variants without
-  a cost are excluded from totals and marked "cost missing".
-- **Markdown suggestion** by days inactive: under 30 → none, 30–59 → **15%**, 60–89 → **30%**,
-  90 or more → **50%**. Never recommend a price below cost without a warning.
+| Days inactive | Suggested discount |
+| ------------- | ------------------ |
+| under 30      | none               |
+| 30–59         | **15%**            |
+| 60–89         | **30%**            |
+| 90 or more    | **50%**            |
+
+The tiers are by how long the variant has been idle, not by the window you are looking at: a
+variant idle for 75 days gets 30% in the 30-day and the 60-day views alike. Every row of a
+window is already idle for at least that window, so a row never lands under the first tier
+(30 days) in practice.
+
+- `suggestedPriceCents` = current price × (100 − discount) ÷ 100, rounded half up to a cent
+  (integer maths).
+- `marginAfterMarkdownCents` = suggested price − unit cost, per unit; `null` when the cost is
+  unknown.
+- `belowCost` is true when the suggested price is **under** the unit cost, so the tool never
+  recommends a loss without saying so. Selling exactly at cost is break-even and is not flagged.
+  With an unknown cost there is nothing to compare with: `belowCost` is false and the row is
+  marked "cost missing".
+
+The tier thresholds are the named constant `MARKDOWN_TIERS` in
+`backend/src/inventory/markdown.ts`; change them there and here together.

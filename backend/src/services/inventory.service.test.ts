@@ -7,6 +7,7 @@ import mongoose, { Types } from 'mongoose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { DeadStockQuery } from '../inventory/dead-stock.js';
 import { type FINANCIAL_STATUSES, Order } from '../models/order.model.js';
+import { DEFAULT_HOLDING_COST_RATE } from '../inventory/holding-cost.js';
 import { Product } from '../models/product.model.js';
 import { buildLastSoldPipeline } from '../inventory/last-sold-pipeline.js';
 import { getDeadStock } from './inventory.service.js';
@@ -48,7 +49,12 @@ interface FixtureSale {
 
 let sequence = 0;
 
-async function seedStore(timezone: string, products: FixtureProduct[], sales: FixtureSale[]) {
+async function seedStore(
+  timezone: string,
+  products: FixtureProduct[],
+  sales: FixtureSale[],
+  holdingCostRate = DEFAULT_HOLDING_COST_RATE,
+) {
   const storeId = new Types.ObjectId();
   createdStoreIds.push(storeId);
 
@@ -104,7 +110,7 @@ async function seedStore(timezone: string, products: FixtureProduct[], sales: Fi
     }),
   );
 
-  return { _id: storeId, timezone };
+  return { _id: storeId, timezone, holdingCostRate };
 }
 
 const idsOf = async (store: Awaited<ReturnType<typeof seedStore>>, window: 30 | 60 | 90) =>
@@ -167,12 +173,19 @@ describe.skipIf(!hasTestDb)('getDeadStock (database)', () => {
       variantId: 'never',
       lastSoldAt: null,
       daysInactive: 122,
+      // Idle 90+ days: 50% off the fixture price of 1000, which still clears the cost of 300.
+      priceCents: 1000,
+      suggestedDiscountPct: 50,
+      suggestedPriceCents: 500,
+      marginAfterMarkdownCents: 200,
+      belowCost: false,
     });
     // Units 4 + 3 + 2 + 7, value 800 + 300 + 200 + 2100.
     expect(report.totals).toEqual({
       variants: 4,
       units: 16,
       stockValueCents: 3400,
+      monthlyHoldingCostCents: 68, // 3400 × 2%
       variantsMissingCost: 0,
     });
   });
@@ -243,7 +256,27 @@ describe.skipIf(!hasTestDb)('getDeadStock (database)', () => {
     const report = await getDeadStock(store, query(30), NOW);
 
     expect(report.items[0]).toMatchObject({ unitCostCents: null, stockValueCents: null });
-    expect(report.totals).toMatchObject({ stockValueCents: 0, variantsMissingCost: 1 });
+    expect(report.totals).toMatchObject({
+      stockValueCents: 0,
+      monthlyHoldingCostCents: 0,
+      variantsMissingCost: 1,
+    });
+    expect(report.items[0]?.holdingCostCents).toBeNull();
+  });
+
+  it("prices the holding cost at the store's own rate", async () => {
+    const store = await seedStore(
+      'UTC',
+      [{ id: 'P1', variants: [{ id: 'v', qty: 10, cost: 500 }] }], // value 5000
+      [],
+      0.035,
+    );
+
+    const report = await getDeadStock(store, query(30), NOW);
+
+    expect(report.holdingCostRate).toBe(0.035);
+    expect(report.items[0]?.holdingCostCents).toBe(175); // 5000 × 3.5%
+    expect(report.totals.monthlyHoldingCostCents).toBe(175);
   });
 
   it('finds the last sales through a store index, never a collection scan', async () => {

@@ -74,6 +74,62 @@ describe.skipIf(!hasTestDb)('store access (database)', () => {
     expect(res.status).toBe(400);
   });
 
+  describe('settings', () => {
+    const patch = (user: TestUser | null, body: unknown) => {
+      const req = request(app).patch(`/api/stores/${storeId}/settings`);
+      return (user ? req.set('Authorization', bearer(user)) : req).send(body as object);
+    };
+    const rateOf = async (user: TestUser) => {
+      const res = await request(app).get('/api/stores').set('Authorization', bearer(user));
+      return (res.body as { stores: { settings: { holdingCostRate: number } }[] }).stores[0]
+        ?.settings.holdingCostRate;
+    };
+
+    it('starts a new store at 2% a month', async () => {
+      expect(await rateOf(owner)).toBe(0.02);
+    });
+
+    it('needs a token', async () => {
+      expect((await patch(null, { holdingCostRate: 0.05 })).status).toBe(401);
+    });
+
+    it("answers 404 for someone else's store and leaves it unchanged", async () => {
+      const res = await patch(stranger, { holdingCostRate: 0.5 });
+
+      expect(res.status).toBe(404);
+      expect(await rateOf(owner)).toBe(0.02);
+    });
+
+    it.each([
+      ['above 100%', { holdingCostRate: 1.5 }],
+      ['negative', { holdingCostRate: -0.1 }],
+      ['finer than 0.01%', { holdingCostRate: 0.00001 }],
+      ['not a number', { holdingCostRate: '5%' }],
+      ['missing', {}],
+    ])('rejects a rate that is %s', async (_label, body) => {
+      const res = await patch(owner, body);
+
+      expect(res.status).toBe(400);
+      expect(await rateOf(owner)).toBe(0.02);
+    });
+
+    it('updates the rate for the owner, and the dead-stock report uses it', async () => {
+      const res = await patch(owner, { holdingCostRate: 0.035 });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ settings: { holdingCostRate: 0.035 } });
+      expect(await rateOf(owner)).toBe(0.035);
+
+      const report = await request(app)
+        .get(`/api/stores/${storeId}/inventory/dead-stock`)
+        .set('Authorization', bearer(owner));
+      expect(report.body).toMatchObject({
+        holdingCostRate: 0.035,
+        totals: { variants: 0, monthlyHoldingCostCents: 0 },
+      });
+    });
+  });
+
   it('starts a sync for the owner and refuses a second one while it runs', async () => {
     const first = await request(app)
       .post(`/api/stores/${storeId}/sync`)

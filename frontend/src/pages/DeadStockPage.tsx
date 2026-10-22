@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
 import { ErrorState, FirstRunState } from '@/components/dashboard/DashboardStates';
+import {
+  DeadStockSummary,
+  DeadStockSummarySkeleton,
+} from '@/components/inventory/DeadStockSummary';
 import { DeadStockTable, DeadStockTableSkeleton } from '@/components/inventory/DeadStockTable';
+import { HoldingCostRateForm } from '@/components/inventory/HoldingCostRateForm';
 import { Pagination } from '@/components/inventory/Pagination';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useDeadStockParams } from '@/features/inventory/dead-stock-params';
 import { DEAD_STOCK_WINDOWS, type DeadStockWindow } from '@/features/inventory/types';
 import { useDeadStock } from '@/features/inventory/use-dead-stock';
-import { formatInteger, formatMoney } from '@/features/metrics/format';
 import { useActiveStore } from '@/features/stores/use-active-store';
 import { useSyncController } from '@/features/sync/sync-context';
 import { ApiError } from '@/lib/api-client';
@@ -68,6 +72,7 @@ export function DeadStockPage() {
     return (
       <div className="space-y-6" role="status" aria-busy="true">
         <span className="sr-only">Loading dead stock</span>
+        <DeadStockSummarySkeleton />
         <DeadStockTableSkeleton />
       </div>
     );
@@ -88,7 +93,12 @@ export function DeadStockPage() {
       />
     );
   } else if (syncing || !data) {
-    content = <DeadStockTableSkeleton />;
+    content = (
+      <>
+        <DeadStockSummarySkeleton />
+        <DeadStockTableSkeleton />
+      </>
+    );
   } else if (data.totals.variants === 0) {
     content = (
       <p className="rounded-lg border border-dashed border-line-strong bg-card px-6 py-10 text-center text-ink-muted">
@@ -97,20 +107,9 @@ export function DeadStockPage() {
     );
   } else {
     const currency = store?.currency ?? 'USD';
-    const { totals } = data;
     content = (
       <>
-        <p className="text-sm text-ink-muted">
-          <span className="font-medium text-ink">{formatInteger(totals.variants)}</span> variants,{' '}
-          <span className="font-medium text-ink">{formatInteger(totals.units)}</span> units,{' '}
-          <span className="font-medium text-ink">
-            {formatMoney(totals.stockValueCents, currency)}
-          </span>{' '}
-          tied up
-          {totals.variantsMissingCost > 0 &&
-            ` (${formatInteger(totals.variantsMissingCost)} without a cost are not counted)`}
-          .
-        </p>
+        <DeadStockSummary totals={data.totals} currency={currency} />
         <DeadStockTable
           items={data.items}
           currency={currency}
@@ -126,6 +125,7 @@ export function DeadStockPage() {
   return (
     <div className="space-y-6">
       {header}
+      {store && <HoldingCostRateForm storeId={store.id} rate={store.settings.holdingCostRate} />}
       <section
         aria-label="Dead stock"
         aria-busy={syncing || report.isPending}

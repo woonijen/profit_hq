@@ -12,7 +12,7 @@ import { GRANULARITIES } from '../metrics/trend-pipeline.js';
 import { loginBody, registerBody } from '../schemas/auth.schemas.js';
 import { deadStockQuery } from '../schemas/inventory.schemas.js';
 import { summaryQuery, trendQuery } from '../schemas/metrics.schemas.js';
-import { storeParams } from '../schemas/store.schemas.js';
+import { storeParams, updateSettingsBody } from '../schemas/store.schemas.js';
 import { RANGE_KEYS } from '../utils/date-range.js';
 
 type Json = Record<string, unknown>;
@@ -100,11 +100,21 @@ const schemas: Record<string, Json> = {
       description: 'Short-lived JWT; send as `Authorization: Bearer`.',
     },
   }),
+  StoreSettings: object({
+    holdingCostRate: {
+      type: 'number',
+      minimum: 0,
+      maximum: 1,
+      description:
+        'Monthly cost of holding stock as a fraction of its value, in steps of 0.0001; 0.02 = 2%',
+    },
+  }),
   Store: object({
     id: { type: 'string' },
     shopDomain: { type: 'string' },
     currency: { type: 'string', description: 'ISO 4217 code' },
     timezone: { type: 'string', description: 'IANA zone; day and month buckets are cut in it' },
+    settings: ref('StoreSettings'),
   }),
   SyncCounts: object({
     inserted: integer(),
@@ -205,6 +215,7 @@ const schemas: Record<string, Json> = {
     variantTitle: { type: 'string' },
     sku: { type: ['string', 'null'] },
     inventoryQuantity: integer('Units in stock'),
+    priceCents: cents('Current selling price'),
     unitCostCents: {
       type: ['integer', 'null'],
       description: 'Cost per unit, integer cents; null when the merchant never entered one.',
@@ -217,18 +228,48 @@ const schemas: Record<string, Json> = {
       oneOf: [dateTime, { type: 'null' }],
       description: 'Most recent sale with a unit that was not refunded; null = never sold.',
     },
+    holdingCostCents: {
+      type: ['integer', 'null'],
+      description:
+        'Monthly cost of holding this stock: stock value × the store holding cost rate, rounded ' +
+        'half up to a cent. Null when the cost is unknown.',
+    },
     daysInactive: integer(
       'Calendar days in the store time zone since the last sale, or since the product was created if it never sold',
     ),
+    suggestedDiscountPct: {
+      enum: [0, 15, 30, 50],
+      description: 'Markdown by days inactive: 30–59 → 15, 60–89 → 30, 90+ → 50 (0 below 30)',
+    },
+    suggestedPriceCents: cents('Current price less the suggested discount, rounded half up'),
+    marginAfterMarkdownCents: {
+      type: ['integer', 'null'],
+      description:
+        'Profit per unit at the suggested price (negative = a loss); null when the cost is unknown.',
+    },
+    belowCost: {
+      type: 'boolean',
+      description:
+        'The suggested price is under the unit cost. False when the cost is unknown or equals the price.',
+    },
   }),
   DeadStockReport: object({
     window: { enum: [...DEAD_STOCK_WINDOWS] },
     asOf: dateTime,
+    holdingCostRate: {
+      type: 'number',
+      description: 'The store holding cost rate the costs were worked out with; 0.02 = 2%',
+    },
     totals: object({
       variants: integer('Dead variants over all pages'),
       units: integer(),
       stockValueCents: cents('Capital tied up, counting only variants with a known cost'),
-      variantsMissingCost: integer('Dead variants left out of `stockValueCents`'),
+      monthlyHoldingCostCents: cents(
+        'Monthly holding cost of the dead variants with a known cost (the sum of the rows)',
+      ),
+      variantsMissingCost: integer(
+        'Dead variants left out of `stockValueCents` and `monthlyHoldingCostCents`',
+      ),
     }),
     items: { type: 'array', items: ref('DeadStockItem') },
     page: object({
@@ -256,7 +297,7 @@ const validationError = errorResponse('Invalid request (`VALIDATION_ERROR`)');
 const tooManyRequests = errorResponse('Rate limit exceeded (`TOO_MANY_REQUESTS`)');
 const wrongOrigin = errorResponse('The `Origin` header is not the frontend (`FORBIDDEN`)');
 
-const credentialsBody = (schema: z.ZodType): Json => ({
+const jsonBody = (schema: z.ZodType): Json => ({
   required: true,
   content: json(jsonSchemaOf(schema)),
 });
@@ -300,7 +341,7 @@ export const openApiSpec: Json = {
         operationId: 'register',
         summary: 'Create an account (and its store) and sign in',
         description: refreshCookieNote,
-        requestBody: credentialsBody(registerBody),
+        requestBody: jsonBody(registerBody),
         responses: {
           '201': response('Account created', ref('AuthResponse')),
           '400': validationError,
@@ -315,7 +356,7 @@ export const openApiSpec: Json = {
         operationId: 'login',
         summary: 'Sign in',
         description: `${refreshCookieNote} A wrong password and an unknown email give the same answer.`,
-        requestBody: credentialsBody(loginBody),
+        requestBody: jsonBody(loginBody),
         responses: {
           '200': response('Signed in', ref('AuthResponse')),
           '400': validationError,
@@ -372,6 +413,25 @@ export const openApiSpec: Json = {
         responses: {
           '200': response('Stores', object({ stores: { type: 'array', items: ref('Store') } })),
           '401': errorResponse('Missing, invalid or expired access token'),
+        },
+      },
+    },
+    '/stores/{storeId}/settings': {
+      patch: {
+        tags: ['Stores'],
+        operationId: 'updateStoreSettings',
+        summary: 'Change the settings of a store',
+        description: 'Currently the monthly holding cost rate used by the dead-stock report.',
+        security: secured,
+        parameters: storeIdParameters,
+        requestBody: jsonBody(updateSettingsBody),
+        responses: {
+          '200': response(
+            'The settings after the change',
+            object({ settings: ref('StoreSettings') }),
+          ),
+          '400': validationError,
+          ...authErrors,
         },
       },
     },
@@ -445,7 +505,8 @@ export const openApiSpec: Json = {
         summary: 'In-stock variants with no sale in the last 30, 60 or 90 days',
         description:
           'A variant is dead for a window of N days when it has stock and did not sell on any of ' +
-          'the last N calendar days of the store time zone. Definitions: `docs/dead-stock.md`.',
+          'the last N calendar days of the store time zone. Each row carries its monthly holding ' +
+          'cost. Definitions: `docs/dead-stock.md`.',
         security: secured,
         parameters: [...storeIdParameters, ...parametersOf('query', deadStockQuery)],
         responses: {

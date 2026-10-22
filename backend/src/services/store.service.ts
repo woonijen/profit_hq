@@ -41,3 +41,22 @@ export async function getOwnedStore(storeId: string, ownerId: string) {
   if (!store) throw AppError.notFound('Store not found');
   return store;
 }
+
+export interface StoreSettings {
+  holdingCostRate: number;
+}
+
+/** Changes the settings of a store the caller owns; same not-found rule as `getOwnedStore`. */
+export async function updateOwnedStoreSettings(
+  storeId: string,
+  ownerId: string,
+  settings: StoreSettings,
+) {
+  const store = await Store.findOneAndUpdate(
+    { _id: new Types.ObjectId(storeId), ownerId: new Types.ObjectId(ownerId) },
+    { $set: settings },
+    { returnDocument: 'after', runValidators: true },
+  );
+  if (!store) throw AppError.notFound('Store not found');
+  return store;
+}

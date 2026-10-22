@@ -11,14 +11,23 @@ import {
 
 // "Now" is Jan 31 2026, noon UTC. Day counts below are calendar days back from Jan 31.
 const NOW = new Date('2026-01-31T12:00:00Z');
+const RATE = 0.02;
 
 function variant(
   shopifyId: string,
   quantity: number,
   cost: number | null,
   title = 'Default Title',
+  price = 1000,
 ): StockedProduct['variants'][number] {
-  return { shopifyId, title, sku: null, unitCostCents: cost, inventoryQuantity: quantity };
+  return {
+    shopifyId,
+    title,
+    sku: null,
+    priceCents: price,
+    unitCostCents: cost,
+    inventoryQuantity: quantity,
+  };
 }
 
 function product(
@@ -84,7 +93,7 @@ describe('findDeadStock', () => {
   });
 
   const idsFor = (window: 30 | 60 | 90) =>
-    findDeadStock(products, lastSold, window, 'UTC', NOW)
+    findDeadStock(products, lastSold, window, 'UTC', NOW, RATE)
       .map((item) => item.variantId)
       .sort();
 
@@ -95,7 +104,7 @@ describe('findDeadStock', () => {
   });
 
   it('times a variant that never sold from the creation of its product', () => {
-    const [never] = findDeadStock(products, lastSold, 90, 'UTC', NOW).filter(
+    const [never] = findDeadStock(products, lastSold, 90, 'UTC', NOW, RATE).filter(
       (item) => item.variantId === 'V-never',
     );
     expect(never).toMatchObject({ lastSoldAt: null, daysInactive: 90 });
@@ -106,11 +115,54 @@ describe('findDeadStock', () => {
   });
 
   it('values the stock, or reports an unknown value when the cost is missing', () => {
-    const items = findDeadStock(products, lastSold, 30, 'UTC', NOW);
+    const items = findDeadStock(products, lastSold, 30, 'UTC', NOW, RATE);
     const byId = new Map(items.map((item) => [item.variantId, item]));
 
     expect(byId.get('V-30')).toMatchObject({ inventoryQuantity: 4, stockValueCents: 800 });
     expect(byId.get('V-nocost')).toMatchObject({ unitCostCents: null, stockValueCents: null });
+  });
+
+  it('suggests the markdown tier of how long each variant has been idle', () => {
+    const items = findDeadStock(products, lastSold, 30, 'UTC', NOW, RATE);
+    const byId = new Map(items.map((item) => [item.variantId, item]));
+
+    // Price 1000 everywhere: V-30 idle 30 days → 15%, V-60 → 30%, V-95 → 50%.
+    expect(byId.get('V-30')).toMatchObject({ suggestedDiscountPct: 15, suggestedPriceCents: 850 });
+    expect(byId.get('V-60')).toMatchObject({ suggestedDiscountPct: 30, suggestedPriceCents: 700 });
+    expect(byId.get('V-95')).toMatchObject({ suggestedDiscountPct: 50, suggestedPriceCents: 500 });
+    // Cost 200 at 850 leaves 650; cost 100 at 500 leaves 400; no cost leaves nothing to report.
+    expect(byId.get('V-30')?.marginAfterMarkdownCents).toBe(650);
+    expect(byId.get('V-95')?.marginAfterMarkdownCents).toBe(400);
+    expect(byId.get('V-nocost')).toMatchObject({
+      marginAfterMarkdownCents: null,
+      belowCost: false,
+    });
+  });
+
+  it('flags a markdown that would sell under cost', () => {
+    const [item] = findDeadStock(
+      [product('P', 'Pricey cost', [variant('V', 3, 600)])],
+      sold({ V: '2025-10-01T00:00:00Z' }), // 122 days idle → 50% off 1000 = 500 < cost 600
+      30,
+      'UTC',
+      NOW,
+      RATE,
+    );
+
+    expect(item).toMatchObject({ suggestedPriceCents: 500, marginAfterMarkdownCents: -100 });
+    expect(item?.belowCost).toBe(true);
+  });
+
+  it('prices the monthly holding cost at the rate, unknown when the cost is missing', () => {
+    const items = findDeadStock(products, lastSold, 30, 'UTC', NOW, RATE);
+    const byId = new Map(items.map((item) => [item.variantId, item]));
+
+    expect(byId.get('V-30')?.holdingCostCents).toBe(16); // 800 × 2%
+    expect(byId.get('V-95')?.holdingCostCents).toBe(4); // 200 × 2%
+    expect(byId.get('V-nocost')?.holdingCostCents).toBeNull();
+
+    const free = findDeadStock(products, lastSold, 30, 'UTC', NOW, 0);
+    expect(free.find((item) => item.variantId === 'V-30')?.holdingCostCents).toBe(0);
   });
 });
 
@@ -128,12 +180,14 @@ describe('totalDeadStock', () => {
       30,
       'UTC',
       NOW,
+      RATE,
     );
 
     expect(totalDeadStock(items)).toEqual({
       variants: 3,
       units: 13,
       stockValueCents: 1100,
+      monthlyHoldingCostCents: 22, // 16 + 6; the unknown one adds nothing
       variantsMissingCost: 1,
     });
   });
@@ -152,7 +206,7 @@ describe('sortDeadStock and paging', () => {
     c: '2025-11-01T00:00:00Z', // 91 days
     d: '2025-12-15T00:00:00Z', // 47 days
   });
-  const items = findDeadStock(products, lastSold, 30, 'UTC', NOW);
+  const items = findDeadStock(products, lastSold, 30, 'UTC', NOW, RATE);
   const order = (sort: Parameters<typeof sortDeadStock>[1], dir: 'asc' | 'desc') =>
     sortDeadStock(items, sort, dir).map((item) => item.variantId);
 
@@ -178,11 +232,17 @@ describe('sortDeadStock and paging', () => {
       page: 2,
       pageSize: 3,
     };
-    const report = buildDeadStockReport(products, lastSold, query, 'UTC', NOW);
+    const report = buildDeadStockReport(products, lastSold, query, 'UTC', NOW, RATE);
 
     expect(report.items.map((item) => item.variantId)).toEqual(['d']);
     expect(report.page).toEqual({ number: 2, size: 3, totalItems: 4, totalPages: 2 });
-    expect(report.totals).toMatchObject({ variants: 4, units: 27, stockValueCents: 3300 });
+    expect(report.totals).toMatchObject({
+      variants: 4,
+      units: 27,
+      stockValueCents: 3300,
+      monthlyHoldingCostCents: 66, // 20 + 36 + 10, over every page
+    });
+    expect(report.holdingCostRate).toBe(RATE);
   });
 
   it('returns an empty page past the end', () => {
@@ -193,7 +253,7 @@ describe('sortDeadStock and paging', () => {
       page: 5,
       pageSize: 3,
     };
-    const report = buildDeadStockReport(products, lastSold, query, 'UTC', NOW);
+    const report = buildDeadStockReport(products, lastSold, query, 'UTC', NOW, RATE);
 
     expect(report.items).toEqual([]);
     expect(report.page.totalItems).toBe(4);

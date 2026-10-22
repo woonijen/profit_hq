@@ -10,7 +10,7 @@ import { Order } from '../models/order.model.js';
 import { Product } from '../models/product.model.js';
 import type { StoreDoc } from '../models/store.model.js';
 
-type InventoryStore = Pick<StoreDoc, 'timezone'> & { _id: Types.ObjectId };
+type InventoryStore = Pick<StoreDoc, 'timezone' | 'holdingCostRate'> & { _id: Types.ObjectId };
 
 /** In-stock variants of a store that did not sell in the last `query.window` days. */
 export async function getDeadStock(
@@ -38,11 +38,19 @@ export async function getDeadStock(
       shopifyId: variant.shopifyId,
       title: variant.title,
       sku: variant.sku ?? null,
+      priceCents: variant.priceCents,
       unitCostCents: variant.unitCostCents,
       inventoryQuantity: variant.inventoryQuantity,
     })),
   }));
   const lastSoldAt = new Map(soldRows.map((row) => [row._id, row.lastSoldAt]));
 
-  return buildDeadStockReport(stocked, lastSoldAt, query, store.timezone, now);
+  return buildDeadStockReport(
+    stocked,
+    lastSoldAt,
+    query,
+    store.timezone,
+    now,
+    store.holdingCostRate,
+  );
 }

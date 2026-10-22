@@ -7,7 +7,7 @@ import { syncRateLimit } from '../middleware/sync-rate-limit.js';
 import { validate } from '../middleware/validate.js';
 import { deadStockQuery } from '../schemas/inventory.schemas.js';
 import { summaryQuery, trendQuery } from '../schemas/metrics.schemas.js';
-import { storeParams } from '../schemas/store.schemas.js';
+import { storeParams, updateSettingsBody } from '../schemas/store.schemas.js';
 
 const passThrough: RequestHandler = (_req, _res, next) => next();
 
@@ -18,6 +18,11 @@ export function createStoreRouter(options: { rateLimits: boolean }): Router {
   router.use(requireAuth);
 
   router.get('/', storeController.list);
+  router.patch(
+    '/:storeId/settings',
+    validate({ params: storeParams, body: updateSettingsBody }),
+    storeController.updateSettings,
+  );
   router.post(
     '/:storeId/sync',
     options.rateLimits ? syncRateLimit() : passThrough,

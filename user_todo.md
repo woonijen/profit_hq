@@ -62,3 +62,14 @@ Legend: `[ ]` todo · `[x]` done. These are tasks only you can do. Claude's task
   - Open "Dead stock" in the sidebar: the list should shrink as the window grows (30 ⊇ 60 ⊇ 90), the two never-sold products stay in all three (one shows "Cost missing"), and the exact counts depend on the random catalog. The product created 10 days ago and the one that sold 20 days ago never appear
   - The 30/60/90 buttons change the table and the URL (`?window=60`); sorting by the column headers flips ascending/descending; with fewer than 26 rows there is no pagination (expected)
   - After a sync finishes, the table refreshes by itself
+- [x] 23. Test Holding Cost (Phase 9, tasks 71, 76–78, 82, 84, 85):
+  - (Done by you: 15 files, 192/192 pass, after allowing your IP in Atlas.) Run `npm test` with `MONGODB_URI_TEST` set. New database tests: the settings endpoint in `store-access.test.ts` and the holding-cost cases in `inventory.service.test.ts`; Claude has not run them
+  - Open "Dead stock": four cards (Dead SKUs, Units stuck, Capital tied up, Holding cost per month) and a "Holding cost / month" column. With the default 2%, a row's cost is 2% of its stock value; the never-sold product without a cost shows "Cost missing" and is not in the totals
+  - Change the rate field (try `3.5`, `3,5` and `3.5%`): Save enables only when the value differs, "Saved" appears, and the cards and column update without a reload. Reload: the new rate is still there
+  - Invalid input (`abc`, `101`, `2.555`, empty) shows an error under the field and does not call the server. Keyboard only: the field and Save button are reachable and show a focus ring
+- [ ] 24. Test Smart Markdowns (Phase 9, tasks 79–81, 86):
+  - Run `npm test` with `MONGODB_URI_TEST` set: the new database assertions are in `inventory.service.test.ts`; Claude has not run them
+  - Open "Dead stock": each row has a "Suggested markdown" cell with a badge and the new price, and the current price struck through under it. A row idle 30–59 days shows −15%, 60–89 days −30%, 90+ days −50% (compare with the "Days inactive" column); the never-sold products are 90+ and show −50%
+  - A row whose new price is under its cost also shows "⚠ Below cost: loses $X per unit" in a bordered label (readable without color). With the demo data some 50% rows should hit it; the row with "Cost missing" never shows the warning
+  - Switch the window to 60 and 90: a variant keeps the same discount in every window it appears in
+
