@@ -11,7 +11,7 @@ interface StatCardProps {
 function StatCard({ label, value, detail }: StatCardProps) {
   return (
     <article className="rounded-lg border border-line bg-card p-5 shadow-sm">
-      <h3 className="text-sm font-medium text-ink-muted">{label}</h3>
+      <h2 className="text-sm font-medium text-ink-muted">{label}</h2>
       <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
       {detail && <p className="mt-1 text-sm text-ink-muted">{detail}</p>}
     </article>

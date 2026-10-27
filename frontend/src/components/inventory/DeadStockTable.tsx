@@ -46,12 +46,18 @@ interface DeadStockTableProps {
 export function DeadStockTable({ items, currency, sort, direction, onSort }: DeadStockTableProps) {
   const header = { activeSort: sort, direction, onSort };
   return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-card shadow-sm">
+    // Focusable so keyboard users can scroll the table sideways on a narrow screen.
+    <div
+      role="region"
+      aria-label="Dead stock table"
+      tabIndex={0}
+      className="overflow-x-auto rounded-lg border border-line bg-card shadow-sm"
+    >
       <table className="w-full min-w-[60rem] text-sm">
         <caption className="sr-only">Products in stock that have not sold</caption>
         <thead className="border-b border-line text-ink-muted">
           <tr>
-            <th scope="col" className="px-4 py-3 text-left font-medium">
+            <th scope="col" className="sticky left-0 bg-card px-4 py-3 text-left font-medium">
               Product
             </th>
             <SortableHeader label="In stock" column="quantity" {...header} />
@@ -71,7 +77,7 @@ export function DeadStockTable({ items, currency, sort, direction, onSort }: Dea
         <tbody className="divide-y divide-line">
           {items.map((item) => (
             <tr key={item.variantId}>
-              <th scope="row" className="px-4 py-3 text-left font-normal">
+              <th scope="row" className="sticky left-0 bg-card px-4 py-3 text-left font-normal">
                 <span className="font-medium">{item.productTitle}</span>
                 <span className="block text-ink-muted">
                   {[item.variantTitle === 'Default Title' ? null : item.variantTitle, item.sku]
@@ -82,14 +88,14 @@ export function DeadStockTable({ items, currency, sort, direction, onSort }: Dea
               <td className="px-4 py-3 text-right tabular-nums">
                 {formatInteger(item.inventoryQuantity)}
               </td>
-              <td className="px-4 py-3 text-right tabular-nums">
+              <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
                 {item.stockValueCents === null ? (
                   <span className="text-ink-muted">Cost missing</span>
                 ) : (
                   formatMoney(item.stockValueCents, currency)
                 )}
               </td>
-              <td className="px-4 py-3 text-right tabular-nums">
+              <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
                 {item.holdingCostCents === null ? (
                   <span className="text-ink-muted">Cost missing</span>
                 ) : (
@@ -99,7 +105,7 @@ export function DeadStockTable({ items, currency, sort, direction, onSort }: Dea
               <td className="px-4 py-3 text-right">
                 <MarkdownCell item={item} currency={currency} />
               </td>
-              <td className="px-4 py-3 text-right text-ink-muted tabular-nums">
+              <td className="px-4 py-3 text-right whitespace-nowrap text-ink-muted tabular-nums">
                 {formatLastSold(item.lastSoldAt)}
               </td>
               <td className="px-4 py-3 text-right font-medium tabular-nums">

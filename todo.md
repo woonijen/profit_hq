@@ -134,8 +134,8 @@ Three features: Dead-Stock Planner (products with stock but zero line-item sales
 - [x] 84. Summary cards: dead SKUs, units stuck, capital tied up, monthly holding cost
 - [x] 85. Holding cost rate control (inline editable, validated, a11y labels) wired to the settings endpoint
 - [x] 86. Smart Markdown column: discount badge (15/30/50%), suggested price, below-cost warning styling that does not rely on color alone
-- [ ] 87. Skeleton, empty ("No dead stock, nice"), error and first-run states; responsive table; dark-mode tokens; accessibility pass
-- [ ] 88. Frontend tests: window filter URL sync, markdown badge rendering, holding cost rate form, formatters
+- [x] 87. Skeleton, empty ("No dead stock, nice"), error and first-run states; responsive table; dark-mode tokens; accessibility pass
+- [x] 88. Frontend tests: window filter URL sync, markdown badge rendering, holding cost rate form, formatters
 
 ### Docs
 

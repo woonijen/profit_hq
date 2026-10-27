@@ -4,6 +4,7 @@ import {
   DeadStockSummary,
   DeadStockSummarySkeleton,
 } from '@/components/inventory/DeadStockSummary';
+import { DeadStockEmptyState } from '@/components/inventory/DeadStockEmptyState';
 import { DeadStockTable, DeadStockTableSkeleton } from '@/components/inventory/DeadStockTable';
 import { HoldingCostRateForm } from '@/components/inventory/HoldingCostRateForm';
 import { Pagination } from '@/components/inventory/Pagination';
@@ -70,10 +71,13 @@ export function DeadStockPage() {
 
   if (storePending || sync.latestRun === undefined) {
     return (
-      <div className="space-y-6" role="status" aria-busy="true">
-        <span className="sr-only">Loading dead stock</span>
-        <DeadStockSummarySkeleton />
-        <DeadStockTableSkeleton />
+      <div className="space-y-6">
+        {header}
+        <div className="space-y-6" role="status" aria-busy="true">
+          <span className="sr-only">Loading dead stock</span>
+          <DeadStockSummarySkeleton />
+          <DeadStockTableSkeleton />
+        </div>
       </div>
     );
   }
@@ -100,11 +104,7 @@ export function DeadStockPage() {
       </>
     );
   } else if (data.totals.variants === 0) {
-    content = (
-      <p className="rounded-lg border border-dashed border-line-strong bg-card px-6 py-10 text-center text-ink-muted">
-        No dead stock: everything in stock sold in the last {data.window} days.
-      </p>
-    );
+    content = <DeadStockEmptyState window={data.window} />;
   } else {
     const currency = store?.currency ?? 'USD';
     content = (

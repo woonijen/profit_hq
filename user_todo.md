@@ -67,9 +67,13 @@ Legend: `[ ]` todo · `[x]` done. These are tasks only you can do. Claude's task
   - Open "Dead stock": four cards (Dead SKUs, Units stuck, Capital tied up, Holding cost per month) and a "Holding cost / month" column. With the default 2%, a row's cost is 2% of its stock value; the never-sold product without a cost shows "Cost missing" and is not in the totals
   - Change the rate field (try `3.5`, `3,5` and `3.5%`): Save enables only when the value differs, "Saved" appears, and the cards and column update without a reload. Reload: the new rate is still there
   - Invalid input (`abc`, `101`, `2.555`, empty) shows an error under the field and does not call the server. Keyboard only: the field and Save button are reachable and show a focus ring
-- [ ] 24. Test Smart Markdowns (Phase 9, tasks 79–81, 86):
-  - Run `npm test` with `MONGODB_URI_TEST` set: the new database assertions are in `inventory.service.test.ts`; Claude has not run them
+- [x] 24. Test Smart Markdowns (Phase 9, tasks 79–81, 86):
+  - (Done by you.) Run `npm test` with `MONGODB_URI_TEST` set: the new database assertions are in `inventory.service.test.ts`; Claude has not run them
   - Open "Dead stock": each row has a "Suggested markdown" cell with a badge and the new price, and the current price struck through under it. A row idle 30–59 days shows −15%, 60–89 days −30%, 90+ days −50% (compare with the "Days inactive" column); the never-sold products are 90+ and show −50%
   - A row whose new price is under its cost also shows "⚠ Below cost: loses $X per unit" in a bordered label (readable without color). With the demo data some 50% rows should hit it; the row with "Cost missing" never shows the warning
   - Switch the window to 60 and 90: a variant keeps the same discount in every window it appears in
 
+- [x] 25. Check the Dead stock page states (Phase 9, task 87):
+  - (Checked by Claude with Playwright against mocked data: the title and window filter show while the skeletons load, and the title stays at the same position when the data arrives.) Reload the page: the "Dead stock" title and window filter stay put while the skeletons show (no jump when the data arrives)
+  - (Checked by Claude with Playwright: Tab reaches the table, ArrowRight scrolls it, and the Product column stays pinned.) Narrow the browser to phone width: the table scrolls sideways with the Product column pinned on the left; Tab reaches the table and the arrow keys scroll it
+  - (Dark mode checked by Claude with Playwright against mocked API data, in the scratchpad: table, badges, below-cost label and pinned Product column are readable. Nothing for you to do.)
