@@ -112,7 +112,14 @@ export const orderSchema = z.object({
     'VOIDED',
   ]),
   currencyCode: z.string().length(3),
-  customer: z.object({ id: gid('Customer'), email: z.string().nullable() }).nullable(),
+  customer: z
+    .object({
+      id: gid('Customer'),
+      email: z.string().nullable(),
+      firstName: z.string().nullable(),
+      lastName: z.string().nullable(),
+    })
+    .nullable(),
   // Sum of line prices after discounts, before tax.
   subtotalPriceSet: moneyBagSchema,
   totalDiscountsSet: moneyBagSchema,

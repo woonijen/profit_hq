@@ -54,7 +54,7 @@ is marked `failed` by the next start attempt, which then proceeds.
 
 ## Not covered yet
 
-- Customers are not stored; orders keep `customerShopifyId`/`customerEmail` for later features.
+- Customers are not stored; orders keep `customerShopifyId`, `customerEmail` and `customerName` (null for guest checkouts), which the retention segments are computed from ([retention.md](retention.md)). `customerName` was added later, so the first sync after it rewrites every order once, because the content hash includes it.
 - The mock shop's history window ends at the start of the current UTC day, so on a new day the
   mock orders' timestamps shift and the first sync of that day rewrites them. A real Shopify
   client has stable timestamps.

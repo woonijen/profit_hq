@@ -33,6 +33,7 @@ const incoming: MappedOrder = {
   refunds: [],
   customerShopifyId: null,
   customerEmail: null,
+  customerName: null,
   shopifyUpdatedAt: new Date('2026-01-01T00:00:00Z'),
   contentHash: 'new',
 };

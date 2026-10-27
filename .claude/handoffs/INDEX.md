@@ -1,5 +1,6 @@
 # Handoff Index
 
+- [2026-10-28 03:12 Dead stock states, a11y and frontend tests (Phase 9, tasks 87–88)](2026-10-28-0312-dead-stock-states-and-tests.md) — Loading/empty states, keyboard-scrollable table with pinned column, 43 new frontend tests (110 pass); dark mode and states checked with Playwright on mocked data; committed as aac918b; tasks 89–90 left.
 - [2026-10-23 03:01 Holding Cost + Smart Markdowns (Phase 9, steps 2–3)](2026-10-23-0301-holding-cost-and-markdowns.md) — Holding cost (rate setting, PATCH settings, cards, rate form) and markdown tiers with below-cost warning built and committed; backend 192/192 incl. DB tests after step 2, step 3 browser check (#24) pending; tasks 87–90 left.
 - [2026-10-15 04:27 Dead-Stock Planner (Phase 9, step 1)](2026-10-15-0427-dead-stock-planner-step-1.md) — Phase 9 tasks added; Planner built end to end (aggregation, endpoint, Dead stock page, mock stalled products, docs/dead-stock.md); lint/typecheck/build pass, DB tests unrun; Holding Cost (step 2) is next.
 - [2026-10-13 23:35 Phases 5–7: trend, dashboard UI, quality/DX](2026-10-13-2335-phases-5-7-trend-dashboard-quality.md) — Trend endpoint, full dashboard + sync UI, Supertest/RTL tests, seed, OpenAPI, CI, Docker, README, ADRs, security hardening; 137 backend + 49 frontend tests pass, Phases 6–7 uncommitted, Docker/CI unverified.

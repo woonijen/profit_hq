@@ -80,8 +80,23 @@ export interface MappedOrder {
   refunds: MappedRefund[];
   customerShopifyId: string | null;
   customerEmail: string | null;
+  customerName: string | null;
   shopifyUpdatedAt: Date;
   contentHash: string;
+}
+
+/**
+ * The customer's display name: first and last name joined, trimmed. Null when the order has no
+ * customer or neither name is filled in (Shopify allows both to be empty).
+ */
+export function customerName(
+  customer: Pick<NonNullable<ShopifyOrder['customer']>, 'firstName' | 'lastName'> | null,
+): string | null {
+  const name = [customer?.firstName, customer?.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' ');
+  return name || null;
 }
 
 /**
@@ -221,6 +236,7 @@ export function mapOrder(ctx: MapContext, order: ShopifyOrder, costs: CostLookup
     refunds,
     customerShopifyId: order.customer?.id ?? null,
     customerEmail: order.customer?.email ?? null,
+    customerName: customerName(order.customer),
     shopifyUpdatedAt: new Date(order.updatedAt),
   };
 

@@ -25,12 +25,19 @@ replace this comment with:
   per store at a time.
 - **COGS snapshot**: the product cost is frozen on each order line when it is synced, so
   changing a cost later never rewrites past profit.
+- **Dead-stock planner**: in-stock variants that have not sold for 30, 60 or 90 days, sortable
+  and paginated, with the capital tied up in them. Computed on read from the orders, so it is
+  always consistent with the latest sync.
+- **Holding cost calculator**: the monthly cost of keeping that stock, from a per-store rate
+  (default 2% of stock value per month) that you edit inline.
+- **Smart markdowns**: a suggested 15%, 30% or 50% discount by how long a variant has been idle,
+  with the new price and a warning, readable without color, when it would sell below cost.
 - **Secure authentication**: short-lived access token kept in memory plus a rotating refresh
   token in an `httpOnly` cookie, with reuse detection.
 - **Accessible, themeable UI**: keyboard focus, live-region sync status, dark mode that follows
   the system.
 
-Planned next: dead-stock detection, customer retention segments, real Shopify OAuth.
+Planned next: customer retention segments, real Shopify OAuth.
 
 ## Architecture
 
@@ -155,7 +162,8 @@ npm test
   store access; database tests for the sync invariants and the aggregation pipelines against
   hand-computed fixtures.
 - **Frontend** (Vitest + Testing Library): the sync state machine, number formatting, metric
-  cards, route guards and the sync controls.
+  cards, route guards and the sync controls, plus the dead-stock page (URL-synced window
+  filter, markdown badges, holding cost rate form, table and states).
 
 Tests that need MongoDB use the database in `MONGODB_URI_TEST`, never the development one, and
 skip themselves while it is empty, so a fresh clone can still run `npm test`.
@@ -177,17 +185,19 @@ is served over plain http; a real deployment must sit behind https and leave it 
 Full, always up-to-date reference: **`/api/docs`** (Swagger UI) or `/api/openapi.json`. The request
 schemas are generated from the same Zod schemas the routes validate with.
 
-| Method and path                       | Purpose                                                     |
-| ------------------------------------- | ----------------------------------------------------------- |
-| `POST /api/auth/register` · `login`   | Create an account / sign in; sets the refresh cookie        |
-| `POST /api/auth/refresh` · `logout`   | Rotate the session / end it                                 |
-| `GET /api/auth/me`                    | The signed-in user                                          |
-| `GET /api/stores`                     | Your stores                                                 |
-| `POST /api/stores/:id/sync`           | Start a sync (`202`; `409` if one is running)               |
-| `GET /api/stores/:id/sync/latest`     | Latest sync run, for polling                                |
-| `GET /api/stores/:id/metrics/summary` | `?range=7d\|30d\|90d` headline metrics with previous period |
-| `GET /api/stores/:id/metrics/trend`   | `?range=…&granularity=day\|month` series, gaps filled       |
-| `GET /api/health`                     | Liveness and database status                                |
+| Method and path                            | Purpose                                                                                 |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `POST /api/auth/register` · `login`        | Create an account / sign in; sets the refresh cookie                                    |
+| `POST /api/auth/refresh` · `logout`        | Rotate the session / end it                                                             |
+| `GET /api/auth/me`                         | The signed-in user                                                                      |
+| `GET /api/stores`                          | Your stores                                                                             |
+| `POST /api/stores/:id/sync`                | Start a sync (`202`; `409` if one is running)                                           |
+| `GET /api/stores/:id/sync/latest`          | Latest sync run, for polling                                                            |
+| `GET /api/stores/:id/metrics/summary`      | `?range=7d\|30d\|90d` headline metrics with previous period                             |
+| `GET /api/stores/:id/metrics/trend`        | `?range=…&granularity=day\|month` series, gaps filled                                   |
+| `GET /api/stores/:id/inventory/dead-stock` | `?window=30\|60\|90` dead variants with holding cost and markdown, sorted and paginated |
+| `PATCH /api/stores/:id/settings`           | Change store settings (the holding cost rate)                                           |
+| `GET /api/health`                          | Liveness and database status                                                            |
 
 Money is always integer cents in the store's currency; ratios are plain numbers (0.25 = 25%).
 
@@ -200,19 +210,21 @@ backend/src
   middleware/    auth, validation, rate limits, error handling
   sync/          mappers, content hash, bulk upsert, COGS reconcile
   metrics/       aggregation pipelines and the maths on their results
+  inventory/     dead-stock report, holding cost and markdown tiers (pure code + last-sale pipeline)
   shopify/       ShopifyClient interface, Zod payload schemas, deterministic mock
   openapi/       API description and Swagger UI routes
   scripts/       seed
 frontend/src
   app/           providers, router, query client
-  features/      auth, stores, metrics, sync (hooks, API calls, state machine)
-  components/    layout, dashboard, ui primitives
-docs/            metrics, sync, security, architecture decisions
+  features/      auth, stores, metrics, inventory, sync (hooks, API calls, state machine)
+  components/    layout, dashboard, inventory, ui primitives
+docs/            metrics, dead-stock, sync, security, architecture decisions
 ```
 
 ## Documentation
 
 - [docs/metrics.md](docs/metrics.md): exact definitions of every number on the dashboard
+- [docs/dead-stock.md](docs/dead-stock.md): dead stock, holding cost and markdown definitions
 - [docs/sync.md](docs/sync.md): the sync engine and its idempotency invariant
 - [docs/security.md](docs/security.md): security review, controls and accepted risks
 - [docs/adr](docs/adr/README.md): architecture decision records

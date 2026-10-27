@@ -9,6 +9,7 @@ import {
   type MapContext,
   mapOrder,
   mapProduct,
+  customerName,
   MappingError,
   toCents,
 } from './mappers.js';
@@ -115,6 +116,34 @@ describe('mapOrder', () => {
     expect(mapOrder(ctx, order, costs).contentHash).toBe(mapOrder(ctx, order, noCosts).contentHash);
   });
 
+  it('snapshots the customer on the order, with the name joined', () => {
+    const order = sampleOrder();
+    if (!order.customer) throw new Error('sample order has no customer');
+    order.customer = { ...order.customer, firstName: 'Ada', lastName: 'Lovelace' };
+    const mapped = mapOrder(ctx, order, noCosts);
+    expect(mapped.customerShopifyId).toBe(order.customer.id);
+    expect(mapped.customerEmail).toBe(order.customer.email);
+    expect(mapped.customerName).toBe('Ada Lovelace');
+  });
+
+  it('leaves the customer fields null on a guest checkout', () => {
+    const mapped = mapOrder(ctx, { ...sampleOrder(), customer: null }, noCosts);
+    expect([mapped.customerShopifyId, mapped.customerEmail, mapped.customerName]).toEqual([
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it('changes the content hash when the customer name changes', () => {
+    const order = sampleOrder();
+    if (!order.customer) throw new Error('sample order has no customer');
+    const renamed = { ...order, customer: { ...order.customer, lastName: 'Renamed' } };
+    expect(mapOrder(ctx, renamed, noCosts).contentHash).not.toBe(
+      mapOrder(ctx, order, noCosts).contentHash,
+    );
+  });
+
   it('changes the content hash when Shopify data changes', () => {
     const order = sampleOrder();
     const changed = { ...order, displayFinancialStatus: 'VOIDED' as const };
@@ -175,6 +204,19 @@ describe('mapOrder', () => {
     const order = sampleOrder();
     order.lineItems.pageInfo.hasNextPage = true;
     expect(() => mapOrder(ctx, order, noCosts)).toThrow(/more than one page/);
+  });
+});
+
+describe('customerName', () => {
+  it.each([
+    [{ firstName: 'Ada', lastName: 'Lovelace' }, 'Ada Lovelace'],
+    [{ firstName: ' Ada ', lastName: null }, 'Ada'],
+    [{ firstName: null, lastName: 'Lovelace' }, 'Lovelace'],
+    [{ firstName: '', lastName: '  ' }, null],
+    [{ firstName: null, lastName: null }, null],
+    [null, null],
+  ])('turns %j into %j', (customer, expected) => {
+    expect(customerName(customer)).toBe(expected);
   });
 });
 

@@ -94,8 +94,8 @@ Tasks that only you can do live in [user_todo.md](user_todo.md).
 
 ## Phase 8 — Backlog (planned, not in current scope)
 
-- [ ] 66. Dead Stock: 30/60/90-day no-sale flags, holding cost, markdown suggestions (umbrella task, broken down in Phase 9: tasks 70–90; tick when all of those are done)
-- [ ] 67. Customer Retention: VIP / At-Risk / Churned segmentation by recency & frequency
+- [x] 66. Dead Stock: 30/60/90-day no-sale flags, holding cost, markdown suggestions (umbrella task, broken down in Phase 9: tasks 70–90; tick when all of those are done)
+- [ ] 67. Customer Retention: VIP / At-Risk / Churned segmentation by recency & frequency (umbrella task, broken down in Phase 10: tasks 91–105; tick when all of those are done)
 - [ ] 68. Real Shopify OAuth + webhooks (replace mock adapter)
 - [ ] 69. Deployment (Render/Fly + Vercel/Netlify) and production env hardening
 
@@ -139,5 +139,36 @@ Three features: Dead-Stock Planner (products with stock but zero line-item sales
 
 ### Docs
 
-- [ ] 89. Update README feature list + screenshots, OpenAPI entries for the new endpoints
-- [ ] 90. ADR in docs/adr: dead-stock definition and the choice to compute it on read (aggregation) rather than storing flags
+- [x] 89. Update README feature list + screenshots, OpenAPI entries for the new endpoints (README done; the OpenAPI entries were added with the endpoints and are covered by the spec test; the screenshots are user_todo #10 and #21)
+- [x] 90. ADR in docs/adr: dead-stock definition and the choice to compute it on read (aggregation) rather than storing flags
+
+## Phase 10 — CRM Segmenter (Customer Retention Matrix)
+
+Two features: the RFV Customer Segmenter (classifies customers into VIP, At-Risk and Churned from the recency and frequency of their orders) and the CRM Insight Matrix (a responsive table with customer identifier, lifetime spend, order count and a color-coded status badge). Not started; implement one group at a time. The decisions in task 91 were made by Claude at the user's request (user_todo #26) and can still be changed.
+
+### Foundation
+
+- [x] 91. docs/retention.md: write up the decisions below and link it from docs/metrics.md. **Decided:** (a) unit of analysis is the customer, identified by `customerShopifyId`; orders without one (guest checkouts) are left out and the page says how many orders were skipped. (b) Orders that count are the ones the revenue metrics count (same statuses as docs/metrics.md and docs/dead-stock.md); an order refunded in full still counts as an order but adds nothing to lifetime spend. (c) Recency = calendar days in the store time zone from the customer's last counted order to today (like the dead-stock days inactive); frequency = number of counted orders; lifetime spend = net revenue of those orders (gross − discounts − refunds, taxes excluded), in integer cents. (d) Segments, first match wins: **Churned** = last order more than 60 days ago; **At-Risk** = last order 31–60 days ago; **VIP** = at least 3 orders and last order within 30 days; everyone else is **Active** (a neutral fourth group, so a one-time recent buyer is not mislabeled; the three spec groups stay the actionable ones and Active is shown but not highlighted). The thresholds are tuned to the mock history (`MOCK_HISTORY_DAYS = 90`, so anything longer than 90 days could never occur in the demo) and a faster-moving store than a typical one; they are named constants, so a real store would raise them (for example 90/180). (e) Thresholds are fixed constants in v1 (no store setting), like the markdown tiers. (f) Segments are computed on read by aggregation, not stored on the customer, as with dead stock
+- [x] 92. Capture the customer's name: extend the order's customer in `shopify/schemas.ts` with `firstName` and `lastName`, snapshot a `customerName` (null when missing) on the Order model and mapper, and update the mock client. Email stays the main identifier; the name is a display extra. Note in the docs that the first sync after this rewrites every order (the content hash changes), as happened for products in Phase 9
+- [ ] 93. Mock data + seed: make the generator deterministically produce all four groups (frequent recent buyers; frequent buyers who went quiet for 31–60 days and for over 60 days; one-time buyers 31–60 days and over 60 days ago; one-time recent buyers), all inside the 90-day mock history and repeat purchases with varied spend; keep guest checkouts; update the seed script and its expected counts
+
+### RFV Customer Segmenter (backend)
+
+- [ ] 94. Pure segment function: (days since last order, order count) → `VIP` / `AT_RISK` / `CHURNED` / `ACTIVE`; thresholds as named constants matching docs/retention.md; boundary days handled explicitly
+- [ ] 95. Aggregation: per customer `$match` store + counted statuses → `$group` by `customerShopifyId` (order count, last order date, net spend in cents, latest email and name), reusing the metrics definitions for net revenue; index review with explain() notes (an index on `{ storeId, customerShopifyId, processedAt }` if needed)
+- [ ] 96. Service + `GET /api/stores/:id/customers/segments` (auth + ownership, Zod query schema: `segment` filter, sorting by spend / orders / recency, pagination) returning rows (identifier, name, lifetime spend, orders, last order date, days since, segment) and a summary with customer count, share of revenue and average spend per segment
+- [ ] 97. Backend tests: unit tests for the segment function (every boundary), and a seeded fixture with hand-computed expected rows and summary, including a guest checkout, a fully refunded order and a customer exactly on a threshold day
+
+### CRM Insight Matrix (frontend)
+
+- [ ] 98. Typed API hooks (TanStack Query): useCustomerSegments; invalidated after a sync finishes, like the inventory queries
+- [ ] 99. Customers page + route + sidebar nav entry; segment filter and sort state synced to URL search params (reuse the dead-stock params pattern); paginated table with customer identifier, lifetime spend, order count and last order
+- [ ] 100. Segment badge: color-coded VIP / At-Risk / Churned / Active that also carries a text label and an icon, so it does not rely on color alone; shared segment tokens for light and dark mode in `index.css`
+- [ ] 101. Segment summary cards (one per segment: customers, share of revenue, average spend) that double as the filter (click or Enter to filter, with `aria-pressed`)
+- [ ] 102. Skeleton, empty ("No customers yet"), error and first-run states; responsive table (pinned customer column, keyboard-scrollable region); dark mode; accessibility pass
+- [ ] 103. Frontend tests: URL sync of filter and sort, badge rendering for each segment, summary cards as filters, formatters, states
+
+### Docs
+
+- [ ] 104. Update README feature list + screenshots, OpenAPI entries for the new endpoint
+- [ ] 105. ADR in docs/adr: segments computed on read from orders (RFV thresholds as constants, guest checkouts excluded) rather than a stored customer collection

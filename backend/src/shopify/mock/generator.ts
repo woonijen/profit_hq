@@ -310,7 +310,14 @@ function buildOrder(
     updatedAt: new Date(updatedAtMs).toISOString(),
     displayFinancialStatus,
     currencyCode,
-    customer: customer ? { id: customer.id, email: customer.email } : null,
+    customer: customer
+      ? {
+          id: customer.id,
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+        }
+      : null,
     subtotalPriceSet: toBag(subtotalCents, currencyCode),
     totalDiscountsSet: toBag(discountCents, currencyCode),
     totalTaxSet: toBag(taxCents, currencyCode),

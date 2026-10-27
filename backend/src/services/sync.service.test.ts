@@ -140,6 +140,36 @@ describe.skipIf(!hasTestDb)('sync service (database)', () => {
     }
   });
 
+  it('stores the customer id, email and name on the order, and nulls for a guest checkout', async () => {
+    const data = mockData();
+    const store = await createStore();
+    await runSync(store, new MockShopifyClient(data));
+
+    const stored = new Map(
+      (await Order.find({ storeId: store._id }).lean()).map((o) => [o.shopifyId, o]),
+    );
+    const withCustomer = data.orders.filter((o) => o.customer);
+    const guests = data.orders.filter((o) => !o.customer);
+    // The mock plants both kinds, otherwise this test would prove nothing.
+    expect(withCustomer.length).toBeGreaterThan(0);
+    expect(guests.length).toBeGreaterThan(0);
+
+    for (const { id, customer } of withCustomer) {
+      expect(stored.get(id), id).toMatchObject({
+        customerShopifyId: customer?.id,
+        customerEmail: customer?.email,
+        customerName: `${customer?.firstName} ${customer?.lastName}`,
+      });
+    }
+    for (const { id } of guests) {
+      expect(stored.get(id), id).toMatchObject({
+        customerShopifyId: null,
+        customerEmail: null,
+        customerName: null,
+      });
+    }
+  });
+
   it('keeps the COGS snapshot of past orders when product costs change later', async () => {
     const store = await createStore();
     await runSync(store, new MockShopifyClient(mockData()));

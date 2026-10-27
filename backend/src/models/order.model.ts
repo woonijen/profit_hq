@@ -74,10 +74,11 @@ const orderSchema = new Schema(
     lineItems: { type: [lineItemSchema], default: [] },
     refunds: { type: [refundSchema], default: [] },
 
-    // Customer fields are captured now for the later Dead Stock / Retention work.
-    // Null for guest checkouts.
+    // Customer fields feed the retention segments (docs/retention.md). All null for guest
+    // checkouts; the name is also null when the customer has none on file.
     customerShopifyId: { type: String, default: null },
     customerEmail: { type: String, default: null },
+    customerName: { type: String, default: null },
 
     shopifyUpdatedAt: { type: Date, required: true },
     // Hash of the mapped fields; lets the sync skip rewriting documents that did not change.
