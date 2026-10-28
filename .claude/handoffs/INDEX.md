@@ -1,5 +1,6 @@
 # Handoff Index
 
+- [2026-10-28 04:18 Phase 9 docs done, Phase 10 (CRM Segmenter) started](2026-10-28-0418-phase-9-docs-phase-10-start.md) — README + ADR 0005 finish Phase 9; Phase 10 tasks 91–105 planned, retention.md written and customer name captured on orders (committed 3d5f052); backend 220/220, frontend 110/110; task 93 (mock segments + seed) is next.
 - [2026-10-28 03:12 Dead stock states, a11y and frontend tests (Phase 9, tasks 87–88)](2026-10-28-0312-dead-stock-states-and-tests.md) — Loading/empty states, keyboard-scrollable table with pinned column, 43 new frontend tests (110 pass); dark mode and states checked with Playwright on mocked data; committed as aac918b; tasks 89–90 left.
 - [2026-10-23 03:01 Holding Cost + Smart Markdowns (Phase 9, steps 2–3)](2026-10-23-0301-holding-cost-and-markdowns.md) — Holding cost (rate setting, PATCH settings, cards, rate form) and markdown tiers with below-cost warning built and committed; backend 192/192 incl. DB tests after step 2, step 3 browser check (#24) pending; tasks 87–90 left.
 - [2026-10-15 04:27 Dead-Stock Planner (Phase 9, step 1)](2026-10-15-0427-dead-stock-planner-step-1.md) — Phase 9 tasks added; Planner built end to end (aggregation, endpoint, Dead stock page, mock stalled products, docs/dead-stock.md); lint/typecheck/build pass, DB tests unrun; Holding Cost (step 2) is next.

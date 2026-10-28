@@ -129,10 +129,24 @@ rollup maintained by the sync is the documented next step, not an accident.
 
 ## Simulated data
 
-The mock Shopify generator (`backend/src/shopify/mock/generator.ts`) plants named scenarios, so
-every segment exists in the demo store, all inside its 90-day history: frequent recent buyers
-(VIP), frequent buyers who went quiet for 31 to 60 days and for more than 60 days, one-time
-buyers 31 to 60 days and more than 60 days ago, and one-time recent buyers (Active). Guest
-checkouts stay in the data. The customer's name now travels on the order (`customerName`), so
-the first sync after that change rewrites every order once, as the dead-stock change did for
-products. Run `npm run seed`, or sync, to load them.
+The mock Shopify generator (`backend/src/shopify/mock/generator.ts`) plants fifteen named
+customers (`CUSTOMER_SCENARIOS`) with fixed order dates, so every segment exists in the demo
+store whatever the random orders do, all inside its 90-day history:
+
+- VIP: three customers with 3 to 5 orders, the last within 30 days.
+- At-Risk: two frequent buyers whose last order is 38 and 40 days ago, and two one-time buyers
+  (45 and 57 days ago).
+- Churned: two frequent buyers whose last order is 66 and 68 days ago, and two one-time buyers
+  (70 and 84 days ago).
+- Active: three one-time buyers from the last month and one customer with two orders.
+
+The days stay at least two days away from each cut (30 and 60), so the store's time zone and
+the time of day cannot move a customer to another segment. The planted customers are the last
+ones in the list and get no random orders; their orders are never voided, and spend varies
+because the products and quantities are drawn. Only a history of 90 days or more plants them.
+Guest checkouts stay in the data.
+
+The customer's name now travels on the order (`customerName`), so the first sync after that
+change rewrites every order once, as the dead-stock change did for products. Run
+`npm run seed`, or sync, to load them. The seed script prints what the sync actually wrote, so
+it has no expected counts to update.

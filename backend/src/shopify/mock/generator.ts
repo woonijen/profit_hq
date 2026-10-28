@@ -11,6 +11,7 @@ import { singlePage } from './connection.js';
 import { createRng, type Rng } from './rng.js';
 
 const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
 const TAX_RATE = 0.08;
 
 const ADJECTIVES = [
@@ -67,6 +68,40 @@ const STALLED_PRODUCTS: readonly {
   { index: 7, lastSaleDaysAgo: null, createdDaysAgo: 100, costKnown: false }, // cost missing
   { index: 8, lastSaleDaysAgo: null, createdDaysAgo: 10 }, // brand new: not dead yet
 ];
+
+/**
+ * Customers with a fixed order history, so every CRM segment exists in the demo data whatever
+ * the random orders do. `ordersDaysAgo` are calendar days before the end of the window (1 =
+ * yesterday), newest first. The days keep at least two days from each segment cut (30, 60) so
+ * the store's time zone and the time of day cannot move a customer to another segment, and
+ * the oldest order stays inside the 90-day history. Planted customers are the last ones in the
+ * list and get no random orders; their orders are never voided, so the dates are what counts.
+ */
+const CUSTOMER_SCENARIOS: readonly { ordersDaysAgo: readonly number[] }[] = [
+  // VIP: 3+ orders, the last one within 30 days
+  { ordersDaysAgo: [4, 11, 19, 27] },
+  { ordersDaysAgo: [2, 9, 16] },
+  { ordersDaysAgo: [1, 6, 12, 18, 24] },
+  // Frequent buyers gone quiet for 31–60 days: At-Risk, not VIP
+  { ordersDaysAgo: [40, 52, 66, 78] },
+  { ordersDaysAgo: [38, 44, 70] },
+  // Frequent buyers gone quiet for over 60 days: Churned
+  { ordersDaysAgo: [68, 75, 83] },
+  { ordersDaysAgo: [66, 74, 81] },
+  // One-time buyers 31–60 days ago: At-Risk
+  { ordersDaysAgo: [45] },
+  { ordersDaysAgo: [57] },
+  // One-time buyers over 60 days ago: Churned
+  { ordersDaysAgo: [70] },
+  { ordersDaysAgo: [84] },
+  // Recent buyers with fewer than 3 orders: Active
+  { ordersDaysAgo: [3] },
+  { ordersDaysAgo: [14] },
+  { ordersDaysAgo: [26] },
+  { ordersDaysAgo: [8, 20] },
+];
+/** The scenarios reach back this far; a shorter history plants none of them. */
+const SCENARIO_MIN_DAYS = 90;
 
 export interface MockShopOptions {
   /** Same seed (and options) ⇒ identical payloads. */
@@ -215,6 +250,8 @@ function buildOrder(
   ids: ReturnType<typeof createIdCounters>,
   index: number,
   processedAtMs: number,
+  /** A planted customer: placed as given (never a guest) and never voided. */
+  plantedCustomer?: ShopifyCustomer,
 ): ShopifyOrder {
   const { rng, catalog, customers, currencyCode, endMs } = ctx;
 
@@ -243,7 +280,7 @@ function buildOrder(
   const taxCents = Math.round(subtotalCents * TAX_RATE);
 
   // Refunds only cover the net line value; tax is not refunded in the simulation.
-  const voided = rng.chance(0.02);
+  const voided = rng.chance(0.02) && !plantedCustomer;
   const refunded = !voided && rng.chance(0.07);
   let refundedCents = 0;
   const refundedLines: { lineId: string; quantity: number }[] = [];
@@ -285,9 +322,9 @@ function buildOrder(
     displayFinancialStatus = refundedCents >= subtotalCents ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
   }
 
-  const customer = rng.chance(0.85)
-    ? customers[Math.floor(rng.next() ** 2 * customers.length)]
-    : undefined;
+  const customer =
+    plantedCustomer ??
+    (rng.chance(0.85) ? customers[Math.floor(rng.next() ** 2 * customers.length)] : undefined);
 
   const lineItems = lines.map((l): ShopifyLineItem => ({
     id: l.id,
@@ -330,7 +367,8 @@ function buildOrder(
 
 /**
  * Generates a whole simulated shop: catalog, customers and `days` of order history with
- * discounts, partial/full refunds and the odd voided order. Pure and deterministic.
+ * discounts, partial/full refunds and the odd voided order. With a history of at least 90 days
+ * it also plants the customers of `CUSTOMER_SCENARIOS`. Pure and deterministic.
  */
 export function generateMockShop(options: MockShopOptions): MockShopData {
   const {
@@ -353,19 +391,41 @@ export function generateMockShop(options: MockShopOptions): MockShopData {
   });
   const customers = buildCustomers(rng, customerCount, startMs);
 
+  // Planted customers sit at the end of the list; random orders only pick from the rest.
+  const planted =
+    days >= SCENARIO_MIN_DAYS && customers.length >= CUSTOMER_SCENARIOS.length * 2
+      ? customers.slice(customers.length - CUSTOMER_SCENARIOS.length)
+      : [];
+  const pool = customers.slice(0, customers.length - planted.length);
+
   // Pick every timestamp first and sort, so order numbers and ids increase with time.
-  const timestamps: number[] = [];
+  const placements: { ts: number; plantedCustomer?: ShopifyCustomer }[] = [];
   for (let day = 0; day < days; day += 1) {
     const count = rng.int(Math.floor(ordersPerDay * 0.5), Math.ceil(ordersPerDay * 1.5));
     for (let i = 0; i < count; i += 1) {
-      timestamps.push(startMs + day * DAY_MS + Math.floor(rng.next() * DAY_MS));
+      placements.push({ ts: startMs + day * DAY_MS + Math.floor(rng.next() * DAY_MS) });
     }
   }
-  timestamps.sort((a, b) => a - b);
+  planted.forEach((plantedCustomer, i) => {
+    for (const daysAgo of CUSTOMER_SCENARIOS[i]?.ordersDaysAgo ?? []) {
+      // Midnight starting that day plus a daytime hour, so the order stays on that calendar day.
+      placements.push({
+        ts: endMs - daysAgo * DAY_MS + (9 + (i % 8)) * HOUR_MS,
+        plantedCustomer,
+      });
+    }
+  });
+  placements.sort((a, b) => a.ts - b.ts);
 
-  const ctx: OrderContext = { rng, catalog, customers, currencyCode, endMs };
+  // Planted orders draw from their own generator, so they leave the random orders unchanged.
+  const ctx: OrderContext = { rng, catalog, customers: pool, currencyCode, endMs };
+  const plantedCtx: OrderContext = { ...ctx, rng: createRng(seed + 1) };
   const ids = createIdCounters();
-  const orders = timestamps.map((ts, index) => buildOrder(ctx, ids, index, ts));
+  const orders = placements.map(({ ts, plantedCustomer }, index) =>
+    plantedCustomer
+      ? buildOrder(plantedCtx, ids, index, ts, plantedCustomer)
+      : buildOrder(ctx, ids, index, ts),
+  );
 
   return { products, customers, orders };
 }

@@ -62,3 +62,80 @@ describe('generateMockShop dead-stock scenarios', () => {
     expect(early.length).toBeGreaterThanOrEqual(shop.products.length - 1);
   });
 });
+
+describe('generateMockShop customer scenarios', () => {
+  const COUNTED = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'];
+  const shop = generateMockShop({ seed: 7, days: 90, endDate: END });
+
+  /** Customer id → counted order days (whole days before END, newest first). */
+  function ordersByCustomer(data: typeof shop) {
+    const byCustomer = new Map<string, number[]>();
+    for (const order of data.orders) {
+      if (!order.customer || !COUNTED.includes(order.displayFinancialStatus)) continue;
+      const list = byCustomer.get(order.customer.id) ?? [];
+      list.push(Math.ceil((END.getTime() - Date.parse(order.processedAt)) / DAY_MS));
+      byCustomer.set(order.customer.id, list);
+    }
+    return byCustomer;
+  }
+
+  /** The rules of docs/retention.md, applied to raw orders. */
+  function segmentOf(daysAgo: number[]) {
+    const lastDays = Math.min(...daysAgo);
+    if (lastDays > 60) return 'CHURNED';
+    if (lastDays > 30) return 'AT_RISK';
+    return daysAgo.length >= 3 ? 'VIP' : 'ACTIVE';
+  }
+
+  it('has customers in every segment, several in each', () => {
+    const counts = new Map<string, number>();
+    for (const days of ordersByCustomer(shop).values()) {
+      counts.set(segmentOf(days), (counts.get(segmentOf(days)) ?? 0) + 1);
+    }
+
+    for (const segment of ['VIP', 'AT_RISK', 'CHURNED', 'ACTIVE']) {
+      expect(counts.get(segment) ?? 0).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('has frequent buyers that went quiet and one-time buyers in both lapsed segments', () => {
+    const all = [...ordersByCustomer(shop).values()];
+    const lapsed = (min: number, max: number) =>
+      all.filter((days) => Math.min(...days) > min && Math.min(...days) <= max);
+
+    expect(lapsed(30, 60).some((days) => days.length >= 3)).toBe(true);
+    expect(lapsed(30, 60).some((days) => days.length === 1)).toBe(true);
+    expect(lapsed(60, 90).some((days) => days.length >= 3)).toBe(true);
+    expect(lapsed(60, 90).some((days) => days.length === 1)).toBe(true);
+  });
+
+  it('keeps guest checkouts and gives repeat buyers orders of different sizes', () => {
+    expect(shop.orders.some((order) => order.customer === null)).toBe(true);
+
+    const spend = new Set(
+      shop.orders
+        .filter((order) => order.customer?.id === shop.customers.at(-15)?.id)
+        .map((order) => order.subtotalPriceSet.shopMoney.amount),
+    );
+    expect(spend.size).toBeGreaterThan(1);
+  });
+
+  it('gives the planted customers no orders outside their scenario', () => {
+    const planted = shop.customers.slice(-15);
+    const total = planted.reduce(
+      (sum, c) => sum + shop.orders.filter((o) => o.customer?.id === c.id).length,
+      0,
+    );
+
+    expect(total).toBe(4 + 3 + 5 + 4 + 3 + 3 + 3 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2);
+  });
+
+  it('plants nothing when the history is too short to hold the scenarios', () => {
+    const short = generateMockShop({ seed: 7, days: 30, endDate: END });
+    const lastCustomer = short.customers.at(-1);
+    const counts = [...ordersByCustomer(short).values()];
+
+    expect(counts.length).toBeGreaterThan(0);
+    expect(short.orders.filter((o) => o.customer?.id === lastCustomer?.id).length).toBeLessThan(3);
+  });
+});
