@@ -163,10 +163,10 @@ Two features: the RFV Customer Segmenter (classifies customers into VIP, At-Risk
 
 - [x] 98. Typed API hooks (TanStack Query): useCustomerSegments; invalidated after a sync finishes, like the inventory queries
 - [x] 99. Customers page + route + sidebar nav entry; segment filter and sort state synced to URL search params (reuse the dead-stock params pattern); paginated table with customer identifier, lifetime spend, order count and last order
-- [ ] 100. Segment badge: color-coded VIP / At-Risk / Churned / Active that also carries a text label and an icon, so it does not rely on color alone; shared segment tokens for light and dark mode in `index.css`
-- [ ] 101. Segment summary cards (one per segment: customers, share of revenue, average spend) that double as the filter (click or Enter to filter, with `aria-pressed`)
-- [ ] 102. Skeleton, empty ("No customers yet"), error and first-run states; responsive table (pinned customer column, keyboard-scrollable region); dark mode; accessibility pass
-- [ ] 103. Frontend tests: URL sync of filter and sort, badge rendering for each segment, summary cards as filters, formatters, states
+- [x] 100. Segment badge: color-coded VIP / At-Risk / Churned / Active that also carries a text label and an icon, so it does not rely on color alone; shared segment tokens for light and dark mode in `index.css` (`components/retention/SegmentBadge.tsx`: tinted pill with an outline icon, text of at least 4.5:1 contrast on its tint, used in the Customers table; tokens `--segment-*-bg/-fg` in all three theme blocks)
+- [x] 101. Segment summary cards (one per segment: customers, share of revenue, average spend) that double as the filter (click or Enter to filter, with `aria-pressed`) (`components/retention/SegmentCards.tsx`; pressing the selected card again clears the filter, which replaces the All button; the old `SegmentedControl` filter is gone from the Customers page; tests in `SegmentCards.test.tsx`)
+- [x] 102. Skeleton, empty ("No customers yet"), error and first-run states; responsive table (pinned customer column, keyboard-scrollable region); dark mode; accessibility pass (new `components/retention/CustomersEmptyState.tsx`: "No customers yet" when no order has a customer, with the guest-checkout count, and "No <segment> customers right now" for an empty filter; the page also announces the customer count politely for screen readers when the filter changes; skeleton, error with retry, first-run, pinned column, keyboard-scrollable table and dark mode were already in place from tasks 98–100 and 106)
+- [ ] 103. Frontend tests: URL sync of filter and sort, badge rendering for each segment, summary cards as filters, formatters, states (summary cards as filters done with task 101; badge and empty states with task 102; formatters left)
 
 ### Docs
 

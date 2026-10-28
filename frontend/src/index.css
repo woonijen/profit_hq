@@ -28,6 +28,15 @@
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --chart-grid: #e2e8f0;
+  /* Customer segment badges: tinted background with text of at least 4.5:1 contrast on it. */
+  --segment-vip-bg: #f3e8ff;
+  --segment-vip-fg: #6b21a8;
+  --segment-at-risk-bg: #fef3c7;
+  --segment-at-risk-fg: #92400e;
+  --segment-churned-bg: #fee2e2;
+  --segment-churned-fg: #991b1b;
+  --segment-active-bg: #d1fae5;
+  --segment-active-fg: #065f46;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,6 +62,14 @@
     --series-1: #3987e5;
     --series-2: #d95926;
     --chart-grid: #1f2937;
+    --segment-vip-bg: #3b0764;
+    --segment-vip-fg: #d8b4fe;
+    --segment-at-risk-bg: #451a03;
+    --segment-at-risk-fg: #fcd34d;
+    --segment-churned-bg: #450a0a;
+    --segment-churned-fg: #fca5a5;
+    --segment-active-bg: #022c22;
+    --segment-active-fg: #6ee7b7;
   }
 }
 
@@ -78,6 +95,14 @@
   --series-1: #3987e5;
   --series-2: #d95926;
   --chart-grid: #1f2937;
+  --segment-vip-bg: #3b0764;
+  --segment-vip-fg: #d8b4fe;
+  --segment-at-risk-bg: #451a03;
+  --segment-at-risk-fg: #fcd34d;
+  --segment-churned-bg: #450a0a;
+  --segment-churned-fg: #fca5a5;
+  --segment-active-bg: #022c22;
+  --segment-active-fg: #6ee7b7;
 }
 
 @theme inline {
@@ -101,6 +126,14 @@
   --color-good: var(--good);
   --color-bad: var(--bad);
   --color-skeleton: var(--skeleton);
+  --color-segment-vip-bg: var(--segment-vip-bg);
+  --color-segment-vip-fg: var(--segment-vip-fg);
+  --color-segment-at-risk-bg: var(--segment-at-risk-bg);
+  --color-segment-at-risk-fg: var(--segment-at-risk-fg);
+  --color-segment-churned-bg: var(--segment-churned-bg);
+  --color-segment-churned-fg: var(--segment-churned-fg);
+  --color-segment-active-bg: var(--segment-active-bg);
+  --color-segment-active-fg: var(--segment-active-fg);
 }
 
 @layer base {

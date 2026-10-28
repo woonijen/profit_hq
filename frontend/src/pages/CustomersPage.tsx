@@ -1,22 +1,15 @@
 import { useEffect } from 'react';
 import { ErrorState, FirstRunState } from '@/components/dashboard/DashboardStates';
 import { Pagination } from '@/components/inventory/Pagination';
+import { NoCustomersInSegment, NoCustomersYet } from '@/components/retention/CustomersEmptyState';
 import { CustomerTable, CustomerTableSkeleton } from '@/components/retention/CustomerTable';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { SegmentCards, SegmentCardsSkeleton } from '@/components/retention/SegmentCards';
 import { useCustomerParams } from '@/features/retention/customer-params';
 import { SEGMENT_LABELS } from '@/features/retention/segments';
-import { CUSTOMER_SEGMENTS, type CustomerSegment } from '@/features/retention/types';
 import { useCustomerSegments } from '@/features/retention/use-customer-segments';
 import { useActiveStore } from '@/features/stores/use-active-store';
 import { useSyncController } from '@/features/sync/sync-context';
 import { ApiError } from '@/lib/api-client';
-
-type SegmentFilter = CustomerSegment | 'ALL';
-
-const FILTER_OPTIONS: { value: SegmentFilter; label: string }[] = [
-  { value: 'ALL', label: 'All' },
-  ...CUSTOMER_SEGMENTS.map((value) => ({ value, label: SEGMENT_LABELS[value] })),
-];
 
 const errorMessage = (error: unknown) =>
   error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
@@ -50,20 +43,12 @@ export function CustomersPage() {
   }
 
   const header = (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Who is buying, who is slipping away and who is gone, by how recently and how often they
-          ordered.
-        </p>
-      </div>
-      <SegmentedControl
-        label="Segment"
-        options={FILTER_OPTIONS}
-        value={query.segment ?? 'ALL'}
-        onChange={(value) => setSegment(value === 'ALL' ? undefined : value)}
-      />
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+      <p className="mt-1 text-sm text-ink-muted">
+        Who is buying, who is slipping away and who is gone, by how recently and how often they
+        ordered. Select a segment to filter the list.
+      </p>
     </div>
   );
 
@@ -71,8 +56,9 @@ export function CustomersPage() {
     return (
       <div className="space-y-6">
         {header}
-        <div role="status" aria-busy="true">
+        <div role="status" aria-busy="true" className="space-y-6">
           <span className="sr-only">Loading customers</span>
+          <SegmentCardsSkeleton />
           <CustomerTableSkeleton />
         </div>
       </div>
@@ -95,12 +81,10 @@ export function CustomersPage() {
     );
   } else if (syncing || !data) {
     content = <CustomerTableSkeleton />;
-  } else if (data.page.totalItems === 0) {
-    content = (
-      <p className="rounded-lg border border-dashed border-line-strong bg-card px-6 py-10 text-center text-ink-muted">
-        No customers to show.
-      </p>
-    );
+  } else if (data.summary.customers === 0) {
+    content = <NoCustomersYet guestOrders={data.summary.guestOrders} />;
+  } else if (data.page.totalItems === 0 && query.segment) {
+    content = <NoCustomersInSegment segment={query.segment} />;
   } else {
     content = (
       <>
@@ -124,11 +108,27 @@ export function CustomersPage() {
   return (
     <div className="flex min-h-96 flex-1 flex-col gap-6">
       {header}
+      {data
+        ? data.summary.customers > 0 && (
+            <SegmentCards
+              segments={data.summary.segments}
+              currency={store?.currency ?? 'USD'}
+              selected={query.segment}
+              onSelect={setSegment}
+            />
+          )
+        : !report.error && <SegmentCardsSkeleton />}
       <section
         aria-label="Customers"
         aria-busy={syncing || report.isPending}
         className={`flex min-h-0 flex-1 flex-col gap-4 ${refreshing ? 'opacity-60' : ''}`}
       >
+        {data && (
+          <p aria-live="polite" className="sr-only">
+            {data.page.totalItems} {query.segment ? `${SEGMENT_LABELS[query.segment]} ` : ''}
+            {data.page.totalItems === 1 ? 'customer' : 'customers'}
+          </p>
+        )}
         {content}
       </section>
     </div>

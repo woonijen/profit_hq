@@ -1,3 +1,4 @@
+import { SegmentBadge } from '@/components/retention/SegmentBadge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import {
@@ -8,7 +9,6 @@ import {
 } from '@/components/ui/table-styles';
 import { formatInteger, formatMoney } from '@/features/metrics/format';
 import { formatDaysAgo, formatOrderDate } from '@/features/retention/format';
-import { SEGMENT_LABELS } from '@/features/retention/segments';
 import type { CustomerRow, CustomerSort, SortDirection } from '@/features/retention/types';
 
 interface CustomerTableProps {
@@ -48,7 +48,9 @@ export function CustomerTable({ items, currency, sort, direction, onSort }: Cust
                   <span className="block text-ink-muted">{customer.identifier}</span>
                 )}
               </th>
-              <td className="px-4 py-3 text-left">{SEGMENT_LABELS[customer.segment]}</td>
+              <td className="px-4 py-3 text-left">
+                <SegmentBadge segment={customer.segment} />
+              </td>
               <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
                 {formatMoney(customer.lifetimeSpendCents, currency)}
               </td>
