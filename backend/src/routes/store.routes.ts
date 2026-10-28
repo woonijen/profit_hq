@@ -1,12 +1,14 @@
 import { type RequestHandler, Router } from 'express';
 import * as inventoryController from '../controllers/inventory.controller.js';
 import * as metricsController from '../controllers/metrics.controller.js';
+import * as retentionController from '../controllers/retention.controller.js';
 import * as storeController from '../controllers/store.controller.js';
 import { requireAuth } from '../middleware/require-auth.js';
 import { syncRateLimit } from '../middleware/sync-rate-limit.js';
 import { validate } from '../middleware/validate.js';
 import { deadStockQuery } from '../schemas/inventory.schemas.js';
 import { summaryQuery, trendQuery } from '../schemas/metrics.schemas.js';
+import { customerSegmentsQuery } from '../schemas/retention.schemas.js';
 import { storeParams, updateSettingsBody } from '../schemas/store.schemas.js';
 
 const passThrough: RequestHandler = (_req, _res, next) => next();
@@ -48,6 +50,11 @@ export function createStoreRouter(options: { rateLimits: boolean }): Router {
     '/:storeId/inventory/dead-stock',
     validate({ params: storeParams, query: deadStockQuery }),
     inventoryController.deadStock,
+  );
+  router.get(
+    '/:storeId/customers/segments',
+    validate({ params: storeParams, query: customerSegmentsQuery }),
+    retentionController.customerSegments,
   );
 
   return router;

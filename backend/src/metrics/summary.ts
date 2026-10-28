@@ -1,5 +1,5 @@
 import type { ResolvedRange } from '../utils/date-range.js';
-import type { PeriodSums } from './period-sums.js';
+import { netRevenueCents, type PeriodSums } from './period-sums.js';
 import type { SummaryRow } from './summary-pipeline.js';
 
 /** A metric for both periods. `changeRatio` is relative (0.1 = up 10%); null if previous is 0. */
@@ -53,7 +53,7 @@ export const EMPTY_SUMS: PeriodSums = {
 
 /** Every metric of one period, derived from its summed totals (docs/metrics.md). */
 export function deriveTotals(row: PeriodSums = EMPTY_SUMS) {
-  const netRevenue = row.grossCents - row.discountCents - row.refundedCents;
+  const netRevenue = netRevenueCents(row);
   const netProfit = netRevenue - row.cogsCents;
   return {
     grossRevenue: row.grossCents,

@@ -8,6 +8,7 @@ import { SyncStatusIndicator } from '@/features/sync/SyncStatusIndicator';
 const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/dead-stock', label: 'Dead stock' },
+  { to: '/customers', label: 'Customers' },
 ];
 
 export function AppLayout() {
@@ -16,8 +17,9 @@ export function AppLayout() {
 
   return (
     <SyncProvider storeId={store?.id}>
-      <div className="flex min-h-screen flex-col md:flex-row">
-        <aside className="border-b border-line bg-card md:w-60 md:border-r md:border-b-0">
+      {/* `relative` makes the shell clip the absolutely positioned screen-reader text (`sr-only`) too, which would otherwise stretch the window and let it scroll. */}
+      <div className="relative flex h-dvh flex-col overflow-hidden md:flex-row">
+        <aside className="shrink-0 border-b border-line bg-card md:w-60 md:border-r md:border-b-0">
           <div className="px-6 py-4 text-lg font-bold tracking-tight">
             Profit<span className="text-accent">HQ</span>
           </div>
@@ -39,8 +41,8 @@ export function AppLayout() {
           </nav>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-card px-6 py-2">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <header className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-card px-6 py-2">
             <div className="flex min-w-0 items-center gap-3">
               <SyncButton />
               <SyncStatusIndicator />
@@ -60,7 +62,8 @@ export function AppLayout() {
               </div>
             )}
           </header>
-          <main className="flex-1 p-6">
+          {/* The page does not scroll: this area does, and list pages scroll their own table. */}
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-6">
             <Outlet />
           </main>
         </div>

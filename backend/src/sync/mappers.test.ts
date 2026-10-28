@@ -21,10 +21,13 @@ const shop = generateMockShop({
   endDate: new Date('2026-01-01T00:00:00Z'),
 });
 
-/** An order with a discount, so the money checks have something to bite on. */
+/** A paid order with a discount, so the money checks have something to bite on. */
 function sampleOrder(): ShopifyOrder {
   const order = shop.orders.find(
-    (o) => Number(o.totalDiscountsSet.shopMoney.amount) > 0 && o.refunds.length === 0,
+    (o) =>
+      Number(o.totalDiscountsSet.shopMoney.amount) > 0 &&
+      o.refunds.length === 0 &&
+      o.displayFinancialStatus === 'PAID',
   );
   if (!order) throw new Error('mock data has no discounted order');
   return structuredClone(order);

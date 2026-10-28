@@ -1,39 +1,9 @@
 import { Skeleton } from '@/components/ui/Skeleton';
+import { SortableHeader } from '@/components/ui/SortableHeader';
 import { MarkdownCell } from './MarkdownCell';
 import { formatInteger, formatMoney } from '@/features/metrics/format';
 import { formatDays, formatLastSold } from '@/features/inventory/format';
 import type { DeadStockItem, DeadStockSort, SortDirection } from '@/features/inventory/types';
-
-interface SortableHeaderProps {
-  label: string;
-  column: DeadStockSort;
-  activeSort: DeadStockSort;
-  direction: SortDirection;
-  onSort: (column: DeadStockSort) => void;
-}
-
-/** A column header that sorts the table. `aria-sort` tells screen readers which one is active. */
-function SortableHeader({ label, column, activeSort, direction, onSort }: SortableHeaderProps) {
-  const active = column === activeSort;
-  return (
-    <th
-      scope="col"
-      aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-      className="px-4 py-3 text-right font-medium"
-    >
-      <button
-        type="button"
-        onClick={() => onSort(column)}
-        className="inline-flex items-center gap-1 rounded hover:text-ink"
-      >
-        {label}
-        <span aria-hidden="true" className="text-xs">
-          {active ? (direction === 'asc' ? '▲' : '▼') : ''}
-        </span>
-      </button>
-    </th>
-  );
-}
 
 interface DeadStockTableProps {
   items: readonly DeadStockItem[];

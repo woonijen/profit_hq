@@ -29,6 +29,7 @@ export function useSync(storeId: string | undefined) {
     if (storeId && finishedRun) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.storeMetrics(storeId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.storeInventory(storeId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.storeRetention(storeId) });
     }
   }, [queryClient, storeId, finishedRun]);
 

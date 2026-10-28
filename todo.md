@@ -154,15 +154,15 @@ Two features: the RFV Customer Segmenter (classifies customers into VIP, At-Risk
 
 ### RFV Customer Segmenter (backend)
 
-- [ ] 94. Pure segment function: (days since last order, order count) → `VIP` / `AT_RISK` / `CHURNED` / `ACTIVE`; thresholds as named constants matching docs/retention.md; boundary days handled explicitly
-- [ ] 95. Aggregation: per customer `$match` store + counted statuses → `$group` by `customerShopifyId` (order count, last order date, net spend in cents, latest email and name), reusing the metrics definitions for net revenue; index review with explain() notes (an index on `{ storeId, customerShopifyId, processedAt }` if needed)
-- [ ] 96. Service + `GET /api/stores/:id/customers/segments` (auth + ownership, Zod query schema: `segment` filter, sorting by spend / orders / recency, pagination) returning rows (identifier, name, lifetime spend, orders, last order date, days since, segment) and a summary with customer count, share of revenue and average spend per segment
-- [ ] 97. Backend tests: unit tests for the segment function (every boundary), and a seeded fixture with hand-computed expected rows and summary, including a guest checkout, a fully refunded order and a customer exactly on a threshold day
+- [x] 94. Pure segment function: (days since last order, order count) → `VIP` / `AT_RISK` / `CHURNED` / `ACTIVE`; thresholds as named constants matching docs/retention.md; boundary days handled explicitly
+- [x] 95. Aggregation: per customer `$match` store + counted statuses → `$group` by `customerShopifyId` (order count, last order date, net spend in cents, latest email and name), reusing the metrics definitions for net revenue; index review with explain() notes (an index on `{ storeId, customerShopifyId, processedAt }` if needed)
+- [x] 96. Service + `GET /api/stores/:id/customers/segments` (auth + ownership, Zod query schema: `segment` filter, sorting by spend / orders / recency, pagination) returning rows (identifier, name, lifetime spend, orders, last order date, days since, segment) and a summary with customer count, share of revenue and average spend per segment
+- [x] 97. Backend tests: unit tests for the segment function (every boundary), and a seeded fixture with hand-computed expected rows and summary, including a guest checkout, a fully refunded order and a customer exactly on a threshold day
 
 ### CRM Insight Matrix (frontend)
 
-- [ ] 98. Typed API hooks (TanStack Query): useCustomerSegments; invalidated after a sync finishes, like the inventory queries
-- [ ] 99. Customers page + route + sidebar nav entry; segment filter and sort state synced to URL search params (reuse the dead-stock params pattern); paginated table with customer identifier, lifetime spend, order count and last order
+- [x] 98. Typed API hooks (TanStack Query): useCustomerSegments; invalidated after a sync finishes, like the inventory queries
+- [x] 99. Customers page + route + sidebar nav entry; segment filter and sort state synced to URL search params (reuse the dead-stock params pattern); paginated table with customer identifier, lifetime spend, order count and last order
 - [ ] 100. Segment badge: color-coded VIP / At-Risk / Churned / Active that also carries a text label and an icon, so it does not rely on color alone; shared segment tokens for light and dark mode in `index.css`
 - [ ] 101. Segment summary cards (one per segment: customers, share of revenue, average spend) that double as the filter (click or Enter to filter, with `aria-pressed`)
 - [ ] 102. Skeleton, empty ("No customers yet"), error and first-run states; responsive table (pinned customer column, keyboard-scrollable region); dark mode; accessibility pass
@@ -172,3 +172,7 @@ Two features: the RFV Customer Segmenter (classifies customers into VIP, At-Risk
 
 - [ ] 104. Update README feature list + screenshots, OpenAPI entries for the new endpoint
 - [ ] 105. ADR in docs/adr: segments computed on read from orders (RFV thresholds as constants, guest checkouts excluded) rather than a stored customer collection
+
+### App shell
+
+- [x] 106. The page itself does not scroll: the app shell is exactly the window high (`h-dvh`, sidebar and header fixed), the content area scrolls on its own, and on the Customers page the table scrolls inside its own box with a sticky header row and the pinned first column, while the title, filters, summary and pagination stay in view (shared classes in `components/ui/table-styles.ts`, `SortableHeader` takes them through `cellClassName`). The shell is `relative` so it also clips the absolutely positioned `sr-only` text, which otherwise let the window scroll. Checked by you on the dashboard and Customers, and by Claude in a browser at several sizes. Dead stock was tried the same way and put back on request: its page flows normally inside the scrolling content area, with a table that scrolls sideways only

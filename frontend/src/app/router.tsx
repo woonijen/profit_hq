@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { CustomersPage } from '@/pages/CustomersPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DeadStockPage } from '@/pages/DeadStockPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <DashboardPage /> },
               { path: 'dead-stock', element: <DeadStockPage /> },
+              { path: 'customers', element: <CustomersPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

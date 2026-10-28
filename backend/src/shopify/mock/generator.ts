@@ -114,6 +114,11 @@ export interface MockShopOptions {
    */
   endDate: Date;
   productCount?: number;
+  /**
+   * Size of the customer list. With about a thousand orders, a few hundred customers give a
+   * realistic mix of frequent and one-time buyers; with 150 nearly everyone orders weekly and
+   * is a VIP.
+   */
   customerCount?: number;
   /** Average orders per day; each day gets 50%–150% of it. */
   ordersPerDay?: number;
@@ -376,7 +381,7 @@ export function generateMockShop(options: MockShopOptions): MockShopData {
     days,
     endDate,
     productCount = 24,
-    customerCount = 150,
+    customerCount = 600,
     ordersPerDay = 12,
     currencyCode = 'USD',
   } = options;

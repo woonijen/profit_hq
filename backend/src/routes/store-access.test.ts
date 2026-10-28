@@ -31,6 +31,7 @@ describe.skipIf(!hasTestDb)('store access (database)', () => {
   const routes = [
     ['get', 'metrics/summary'],
     ['get', 'metrics/trend'],
+    ['get', 'customers/segments'],
     ['get', 'sync/latest'],
     ['post', 'sync'],
   ] as const;

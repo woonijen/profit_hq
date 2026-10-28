@@ -104,12 +104,15 @@ if it is ever needed.
 Like dead stock, in two steps, with the second in plain code that is unit-tested without a
 database:
 
-1. **One aggregation over the store's orders**, in a single pass: `$match` on `storeId`, the
-   counted statuses and a non-null customer; per-order net revenue worked out with `$map` over
-   the lines (no `$unwind`, so order-level discount and refund are never multiplied by the line
-   count, see [0004](adr/0004-aggregation-design.md)); then `$group` by `customerShopifyId`:
-   order count, `$max` of `processedAt`, the sum of net revenue, and the email and name of the
-   latest order. A second, tiny `$group` (or a `$facet`) counts the guest orders.
+1. **One aggregation over the store's orders**, in a single pass (`retention/customer-pipeline.ts`):
+   `$match` on `storeId` and the counted statuses, then `$group` by `customerShopifyId`: order
+   count, `$max` of `processedAt`, and the sums of gross, discounts and refunds, from which the
+   lifetime spend is worked out with the same Net Revenue function as the metrics. Money lives
+   at order level, so there is no `$unwind` and nothing is multiplied by the line count (see
+   [0004](adr/0004-aggregation-design.md)). The email and the name of a customer are the
+   `$max` of `{ processedAt, value }` over the orders that have one, which picks the latest
+   non-empty value without a `$sort`. Guest checkouts have no id, so they fall into one extra
+   group (`_id: null`) whose order count is `guestOrders`.
 2. **`classify` in code**: days since last order and the segment of each customer, then the
    segment filter, sort, pagination and the per-segment summary.
 
@@ -144,7 +147,9 @@ The days stay at least two days away from each cut (30 and 60), so the store's t
 the time of day cannot move a customer to another segment. The planted customers are the last
 ones in the list and get no random orders; their orders are never voided, and spend varies
 because the products and quantities are drawn. Only a history of 90 days or more plants them.
-Guest checkouts stay in the data.
+Guest checkouts stay in the data. Around them, the random orders are spread over 600
+customers (about 440 of them buy), so the demo store has a realistic mix: roughly a fifth VIP,
+the rest split between Active, At-Risk and Churned.
 
 The customer's name now travels on the order (`customerName`), so the first sync after that
 change rewrites every order once, as the dead-stock change did for products. Run

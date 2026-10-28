@@ -17,6 +17,13 @@ export interface PeriodSums {
   costedGrossCents: number;
 }
 
+/** Net Revenue: Gross − Discounts − Refunds. Tax is never part of it. See docs/metrics.md. */
+export function netRevenueCents(
+  sums: Pick<PeriodSums, 'grossCents' | 'discountCents' | 'refundedCents'>,
+): number {
+  return sums.grossCents - sums.discountCents - sums.refundedCents;
+}
+
 /** COGS of one order: unit cost × units that stayed sold. Unknown cost counts as 0. */
 const orderCogs = {
   $sum: {
